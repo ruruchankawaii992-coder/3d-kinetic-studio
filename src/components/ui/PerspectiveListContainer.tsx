@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Trash2, Layers, ChevronDown, ChevronUp } from 'lucide-react';
 import { useStudioStore, PerspectiveMode } from '../../store/useStudioStore';
+import { motion, AnimatePresence as _AnimatePresence, useReducedMotion } from 'framer-motion';
+const MotionAnimatePresence = _AnimatePresence as any;
 
 export const PerspectiveListContainer: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [newItemText, setNewItemText] = useState('');
   const [newItemTag, setNewItemTag] = useState('Layer');
+  
+  const shouldReduceMotion = useReducedMotion();
 
   const {
     perspectiveMode,
@@ -31,36 +35,140 @@ export const PerspectiveListContainer: React.FC = () => {
     setNewItemText('');
   };
 
-  // Generate perspective CSS transform style based on item index and perspective mode
-  const getItemTransformStyle = (index: number): React.CSSProperties => {
-    const total = listItems.length;
-    const offset = index - (total - 1) / 2;
-
-    switch (perspectiveMode) {
-      case 'Push-in':
-        return {
-          transform: `translateZ(${offset * -60}px) translateY(${offset * 12}px) scale(${1 - Math.abs(offset) * 0.05})`,
-          opacity: 1 - Math.abs(offset) * 0.15,
-          transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease',
-        };
-      case 'Tunnel Zoom In':
-        return {
-          transform: `translateZ(${index * 80}px) rotateZ(${index * 4}deg)`,
-          transition: 'transform 0.5s ease-out',
-        };
-      case 'Tunnel Zoom Out':
-        return {
-          transform: `translateZ(${(total - index) * -80}px) rotateZ(${index * -4}deg)`,
-          transition: 'transform 0.5s ease-out',
-        };
-      case 'Normal':
-      default:
-        return {
-          transform: 'none',
-          transition: 'all 0.3s ease',
-        };
+  // Generate perspective CSS transform variants based on item index and perspective mode
+  const getItemVariants = (index: number, mode: PerspectiveMode) => {
+    if (shouldReduceMotion) {
+      return {
+        initial: { opacity: 0, y: 10, z: 0, scale: 1 },
+        animate: { 
+          opacity: 1, 
+          y: 0,
+          z: 0,
+          scale: 1,
+          transition: { duration: 0.3, delay: index * 0.05 }
+        },
+        exit: { opacity: 0, transition: { duration: 0.2 } }
+      };
     }
+
+    const baseTransition = {
+      duration: 0.8,
+      ease: [0.16, 1, 0.3, 1],
+      delay: index * 0.05,
+    };
+
+    const getPerspectiveStyles = () => {
+      switch (mode) {
+        case 'Push-in':
+          return {
+            z: index * -50,
+            scale: 1 - index * 0.03,
+            opacity: 1 - index * 0.1,
+            rotateX: index * 2,
+            y: index * 5,
+          };
+        case 'Tunnel Zoom In':
+          // Past viewer with scale > 1.2 and opacity fade
+          return {
+            z: index * 120,
+            scale: 1 + index * 0.1,
+            opacity: Math.max(0, 1 - index * 0.2),
+            rotateZ: index * 2,
+            rotateX: 0,
+            y: 0,
+          };
+        case 'Tunnel Zoom Out':
+          // Into vanishing point
+          return {
+            z: index * -150,
+            scale: Math.max(0.1, 1 - index * 0.15),
+            opacity: Math.max(0, 1 - index * 0.2),
+            rotateZ: index * -2,
+            rotateX: 0,
+            y: 0,
+          };
+        case 'Normal':
+        default:
+          return {
+            z: 0,
+            scale: 1,
+            opacity: 1,
+            rotateX: 0,
+            rotateY: 0,
+            rotateZ: 0,
+            y: 0,
+          };
+      }
+    };
+
+    return {
+      initial: {
+        z: -200,
+        scale: 0.7,
+        opacity: 0,
+      },
+      animate: {
+        ...getPerspectiveStyles(),
+        transition: baseTransition,
+      },
+      exit: {
+        z: mode === 'Tunnel Zoom In' ? 400 : -200,
+        scale: mode === 'Tunnel Zoom In' ? 1.5 : 0.5,
+        opacity: 0,
+        transition: { duration: 0.4 },
+      },
+    };
   };
+
+  // Memoized content for performance and to handle perspective transitions
+  const listItemsContent = useMemo(() => {
+    return listItems.map((item, index) => (
+      <motion.div
+        key={item.id}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={getItemVariants(index, perspectiveMode)}
+        layout
+        className="p-3 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-between gap-3 shadow-lg hover:border-cyan-500/40 transition-colors group cursor-pointer perspective-item"
+        style={{
+          willChange: 'transform, opacity',
+          transformStyle: 'preserve-3d',
+          backfaceVisibility: 'hidden',
+        }}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm"
+            style={{
+              backgroundColor: item.color,
+              boxShadow: `0 0 10px ${item.color}`,
+            }}
+          />
+          <span className="text-xs font-semibold text-slate-200 truncate">
+            {item.label}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-[10px] px-2 py-0.5 rounded-md font-mono bg-white/5 text-slate-400 border border-white/10 shadow-inner">
+            {item.tag}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              removeListItem(item.id);
+            }}
+            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400 transition-all p-1 hover:bg-white/5 rounded-md"
+            title="Remove layer item from perspective list"
+            aria-label={`Remove item ${item.label}`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </motion.div>
+    ));
+  }, [listItems, perspectiveMode, shouldReduceMotion]);
 
   return (
     <div className="fixed top-24 left-6 z-40 w-72 md:w-80">
@@ -116,7 +224,7 @@ export const PerspectiveListContainer: React.FC = () => {
 
             {/* 3D Preserved Perspective Container */}
             <div
-              className="perspective-container preserve-3d max-h-48 overflow-y-auto space-y-2 p-1 relative"
+              className="perspective-container preserve-3d max-h-[320px] overflow-y-auto overflow-x-hidden space-y-3 p-4 relative custom-scrollbar"
               style={{
                 perspective: '1000px',
                 transformStyle: 'preserve-3d',
@@ -127,40 +235,11 @@ export const PerspectiveListContainer: React.FC = () => {
                   No items in perspective view
                 </div>
               ) : (
-                listItems.map((item, index) => (
-                  <div
-                    key={item.id}
-                    style={getItemTransformStyle(index)}
-                    className="p-3 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-between gap-3 shadow-md hover:border-cyan-500/40 transition-colors group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm"
-                        style={{
-                          backgroundColor: item.color,
-                          boxShadow: `0 0 8px ${item.color}`,
-                        }}
-                      />
-                      <span className="text-xs font-medium text-slate-200 truncate">
-                        {item.label}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-[10px] px-2 py-0.5 rounded-md font-mono bg-white/5 text-slate-400 border border-white/5">
-                        {item.tag}
-                      </span>
-                      <button
-                        onClick={() => removeListItem(item.id)}
-                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400 transition-opacity p-1"
-                        title="Remove layer item from perspective list"
-                        aria-label={`Remove item ${item.label}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))
+                <div className="flex flex-col gap-3 preserve-3d">
+                  <MotionAnimatePresence mode="popLayout">
+                    {listItemsContent}
+                  </MotionAnimatePresence>
+                </div>
               )}
             </div>
 
