@@ -4,6 +4,32 @@ import { OrbitControls, Environment, Grid, Html } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { Text3DMesh } from './Text3DMesh';
 import { useStudioStore, StudioState } from '../../store/useStudioStore';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
+
+class CanvasErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any) {
+    console.warn('Canvas subcomponent failed to load (likely HDR/Environment or asset):', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || null;
+    }
+    return this.props.children;
+  }
+}
 
 const CameraController: React.FC = () => {
   const controlsRef = useRef<OrbitControlsImpl>(null);
@@ -44,58 +70,81 @@ export const SceneCanvas: React.FC = () => {
 
   return (
     <div className="w-full h-full relative select-none">
-      <Canvas
-        camera={{ position: [0, 0, 6], fov: 45 }}
-        shadows
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-        className="w-full h-full"
-      >
-        <color attach="background" args={['#0B0E14']} />
-        
-        {/* Lights */}
-        <ambientLight intensity={ambientIntensity} />
-        <directionalLight
-          position={[5, 8, 5]}
-          intensity={directionalIntensity}
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-camera-far={20}
-          shadow-camera-left={-6}
-          shadow-camera-right={6}
-          shadow-camera-top={6}
-          shadow-camera-bottom={-6}
-        />
-        <pointLight position={[-6, -4, -4]} intensity={0.6} color="#9D4EDD" />
-        <pointLight position={[6, 4, 3]} intensity={0.8} color="#00F0FF" />
-
-        {/* Environment HDR Preset */}
-        <Environment preset={stageLighting} />
-
-        {/* Controls */}
-        <CameraController />
-
-        {/* Grid helper */}
-        {showGrid && (
-          <Grid
-            position={[0, -1.8, 0]}
-            args={[20, 20]}
-            cellSize={0.6}
-            cellThickness={1}
-            cellColor="#1E293B"
-            sectionSize={3}
-            sectionThickness={1.5}
-            sectionColor="#00F0FF"
-            fadeDistance={25}
-            fadeStrength={1.2}
+      <ErrorBoundary componentName="Canvas">
+        <Canvas
+          camera={{ position: [0, 0, 6], fov: 45 }}
+          shadows
+          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+          className="w-full h-full"
+        >
+          <color attach="background" args={['#0B0E14']} />
+          
+          {/* Lights */}
+          <ambientLight intensity={ambientIntensity} />
+          <directionalLight
+            position={[5, 8, 5]}
+            intensity={directionalIntensity}
+            castShadow
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
+            shadow-camera-far={20}
+            shadow-camera-left={-6}
+            shadow-camera-right={6}
+            shadow-camera-top={6}
+            shadow-camera-bottom={-6}
           />
-        )}
+          <pointLight position={[-6, -4, -4]} intensity={0.6} color="#9D4EDD" />
+          <pointLight position={[6, 4, 3]} intensity={0.8} color="#00F0FF" />
 
-        {/* 3D Geometry */}
-        <Suspense fallback={<LoadingFallback />}>
-          <Text3DMesh />
-        </Suspense>
-      </Canvas>
+          {/* Environment HDR Preset */}
+          <CanvasErrorBoundary
+            fallback={
+              <>
+                <ambientLight intensity={0.5} />
+                <directionalLight position={[-5, 5, -5]} intensity={0.5} />
+              </>
+            }
+          >
+            <Suspense fallback={null}>
+              <Environment preset={stageLighting} />
+            </Suspense>
+          </CanvasErrorBoundary>
+
+          {/* Controls */}
+          <CameraController />
+
+          {/* Grid helper */}
+          {showGrid && (
+            <Grid
+              position={[0, -1.8, 0]}
+              args={[20, 20]}
+              cellSize={0.6}
+              cellThickness={1}
+              cellColor="#1E293B"
+              sectionSize={3}
+              sectionThickness={1.5}
+              sectionColor="#00F0FF"
+              fadeDistance={25}
+              fadeStrength={1.2}
+            />
+          )}
+
+          {/* 3D Geometry */}
+          <CanvasErrorBoundary
+            fallback={
+              <Html center>
+                <div className="p-4 rounded-xl glass-panel text-red-400 text-xs font-mono">
+                  Failed to load 3D mesh.
+                </div>
+              </Html>
+            }
+          >
+            <Suspense fallback={<LoadingFallback />}>
+              <Text3DMesh />
+            </Suspense>
+          </CanvasErrorBoundary>
+        </Canvas>
+      </ErrorBoundary>
     </div>
   );
 };
