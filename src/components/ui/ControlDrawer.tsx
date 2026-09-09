@@ -376,6 +376,54 @@ export const ControlDrawer: React.FC = () => {
                   />
                 </div>
 
+                {/* Bevel Offset */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span 
+                      className="text-slate-400 uppercase"
+                      title="Adjust the offset of the bevel edge from the text outline."
+                    >
+                      Bevel Offset
+                    </span>
+                    <span className="text-cyan-400">{physics.bevelOffset.toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-0.1"
+                    max="0.1"
+                    step="0.01"
+                    value={physics.bevelOffset}
+                    onChange={(e) => updatePhysics({ bevelOffset: parseFloat(e.target.value) })}
+                    className="w-full accent-cyan-400 cursor-pointer"
+                    title="Slide to adjust bevel offset"
+                    aria-label="Bevel Offset slider"
+                  />
+                </div>
+
+                {/* Letter Spacing */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span 
+                      className="text-slate-400 uppercase"
+                      title="Adjust horizontal spacing between characters (tracking)."
+                    >
+                      Letter Spacing
+                    </span>
+                    <span className="text-cyan-400">{physics.letterSpacing.toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-0.1"
+                    max="0.5"
+                    step="0.01"
+                    value={physics.letterSpacing}
+                    onChange={(e) => updatePhysics({ letterSpacing: parseFloat(e.target.value) })}
+                    className="w-full accent-cyan-400 cursor-pointer"
+                    title="Slide to adjust character tracking"
+                    aria-label="Letter Spacing slider"
+                  />
+                </div>
+
                 {/* Curve Segments */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs font-mono">

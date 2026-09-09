@@ -19,6 +19,8 @@ export interface PhysicsParams {
   bevelSegments: number;
   curveSegments: number;
   smoothness: number;
+  bevelOffset: number;
+  letterSpacing: number;
 }
 
 export interface StudioState {
@@ -97,6 +99,8 @@ const INITIAL_STATE = {
     bevelSegments: 5,
     curveSegments: 12,
     smoothness: 8,
+    bevelOffset: 0,
+    letterSpacing: 0,
   },
   animationPreset: 'The Float' as AnimationPreset,
   speed: 1.0,
