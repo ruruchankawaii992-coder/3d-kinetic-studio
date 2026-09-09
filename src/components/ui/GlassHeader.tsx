@@ -19,7 +19,7 @@ export const GlassHeader: React.FC = () => {
   }, []);
 
   return (
-    <header className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between px-6 py-4 rounded-2xl glass-panel border border-white/10 shadow-lg">
+    <header className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between px-6 py-4 rounded-2xl backdrop-blur-xl bg-slate-900/40 border border-white/10 shadow-lg">
       {/* Brand Logo & Name */}
       <div className="flex items-center gap-3">
         <div className="p-2 bg-gradient-to-tr from-neonCyan to-electricPurple rounded-xl shadow-neonCyan/30 shadow-md">
@@ -36,7 +36,10 @@ export const GlassHeader: React.FC = () => {
       </div>
 
       {/* WebGL Status Badge */}
-      <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-slate-950/50 border border-emerald-500/30 rounded-full text-emerald-400">
+      <div 
+        className="hidden md:flex items-center gap-2 px-3 py-1 bg-slate-950/50 border border-emerald-500/30 rounded-full text-emerald-400"
+        title="WebGL 2.0 graphics renderer status: Active and hardware-accelerated with high performance."
+      >
         <CheckCircle className="w-4 h-4 fill-emerald-500/10" />
         <span className="text-[10px] font-mono font-bold tracking-wider uppercase">WebGL 2.0 Active</span>
       </div>
@@ -44,7 +47,10 @@ export const GlassHeader: React.FC = () => {
       {/* Quick Action Controls */}
       <div className="flex items-center gap-3">
         {/* Performance Indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-950/40 border border-white/5 rounded-xl font-mono text-xs text-slate-300">
+        <div 
+          className="flex items-center gap-2 px-3 py-1.5 bg-slate-950/40 border border-white/5 rounded-xl font-mono text-xs text-slate-300"
+          title="Real-time performance frame rate monitor (Frames Per Second). Ensures smooth interactivity."
+        >
           <Cpu className="w-4 h-4 text-neonCyan" />
           <span>{fps} FPS</span>
         </div>
@@ -52,7 +58,8 @@ export const GlassHeader: React.FC = () => {
         {/* Toggle Grid */}
         <button
           onClick={() => setShowGrid(!showGrid)}
-          title="Toggle Canvas Grid"
+          title="Toggle Canvas Grid: Toggle ground floor reference coordinate grid overlay in the 3D scene viewport."
+          aria-label="Toggle floor grid overlay"
           className={`p-2.5 rounded-xl border transition-all duration-300 ${
             showGrid
               ? 'bg-neonCyan/10 border-neonCyan/50 text-neonCyan shadow-neonCyan/20 shadow-md'
@@ -65,7 +72,8 @@ export const GlassHeader: React.FC = () => {
         {/* Reset Camera View */}
         <button
           onClick={triggerCameraReset}
-          title="Reset Camera Angle"
+          title="Reset Camera Angle: Reset the 3D scene camera orientation, angle, and zoom back to default."
+          aria-label="Reset camera orientation and zoom"
           className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all"
         >
           <RotateCcw className="w-4 h-4" />
@@ -74,7 +82,8 @@ export const GlassHeader: React.FC = () => {
         {/* Reset Studio Defaults */}
         <button
           onClick={resetAll}
-          title="Reset Studio Configurations"
+          title="Reset Studio Configurations: Reset all typography, material shaders, stage lighting, physics parameters, and kinetic motion presets back to defaults."
+          aria-label="Reset studio defaults"
           className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-400 transition-all flex items-center gap-1.5"
         >
           <RefreshCw className="w-4 h-4" />

@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Eye, Layers, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Layers, ChevronDown, ChevronUp } from 'lucide-react';
 import { useStudioStore, PerspectiveMode } from '../../store/useStudioStore';
 
-const MODES: PerspectiveMode[] = ['Normal', 'Push-in', 'Tunnel Zoom In', 'Tunnel Zoom Out'];
-
 export const PerspectiveListContainer: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [newItemText, setNewItemText] = useState('');
-  const [newItemTag, setNewItemTag] = useState('Custom');
+  const [newItemTag, setNewItemTag] = useState('Layer');
 
   const {
     perspectiveMode,
@@ -21,134 +19,93 @@ export const PerspectiveListContainer: React.FC = () => {
     e.preventDefault();
     if (!newItemText.trim()) return;
 
-    const colors = ['#00F0FF', '#9D4EDD', '#10B981', '#F59E0B', '#EC4899', '#3B82F6'];
+    const colors = ['#00f0ff', '#7000ff', '#ff0055', '#00ff66', '#ffaa00', '#0099ff'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
     addListItem({
       label: newItemText.trim(),
-      tag: newItemTag || 'Layer',
+      tag: newItemTag.trim() || 'Custom',
       color: randomColor,
     });
+
     setNewItemText('');
   };
 
-  const getItemTransformStyle = (index: number) => {
-    const staggerDelay = `${index * 0.08}s`;
+  // Generate perspective CSS transform style based on item index and perspective mode
+  const getItemTransformStyle = (index: number): React.CSSProperties => {
+    const total = listItems.length;
+    const offset = index - (total - 1) / 2;
 
     switch (perspectiveMode) {
       case 'Push-in':
         return {
-          animation: `pushInEntry 0.65s cubic-bezier(0.16, 1, 0.3, 1) ${staggerDelay} forwards`,
-          willChange: 'transform, opacity',
+          transform: `translateZ(${offset * -60}px) translateY(${offset * 12}px) scale(${1 - Math.abs(offset) * 0.05})`,
+          opacity: 1 - Math.abs(offset) * 0.15,
+          transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease',
         };
-
       case 'Tunnel Zoom In':
         return {
-          animation: `tunnelZoomIn 1.8s infinite ease-in-out ${staggerDelay}`,
-          willChange: 'transform, opacity',
+          transform: `translateZ(${index * 80}px) rotateZ(${index * 4}deg)`,
+          transition: 'transform 0.5s ease-out',
         };
-
       case 'Tunnel Zoom Out':
         return {
-          animation: `tunnelZoomOut 1.8s infinite ease-in-out ${staggerDelay}`,
-          willChange: 'transform, opacity',
+          transform: `translateZ(${(total - index) * -80}px) rotateZ(${index * -4}deg)`,
+          transition: 'transform 0.5s ease-out',
         };
-
       case 'Normal':
       default:
         return {
-          transform: 'translate3d(0, 0, 0) scale3d(1, 1, 1)',
-          opacity: 1,
-          willChange: 'transform, opacity',
+          transform: 'none',
+          transition: 'all 0.3s ease',
         };
     }
   };
 
   return (
-    <div className="fixed bottom-24 left-6 z-30 w-80 max-w-[calc(100vw-3rem)]">
-      <style>{`
-        @keyframes pushInEntry {
-          0% {
-            transform: translate3d(0, 0, -200px) scale3d(0.7, 0.7, 0.7);
-            opacity: 0;
-          }
-          100% {
-            transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
-            opacity: 1;
-          }
-        }
-
-        @keyframes tunnelZoomIn {
-          0% {
-            transform: translate3d(0, 0, -150px) scale3d(0.8, 0.8, 0.8);
-            opacity: 0;
-          }
-          40% {
-            opacity: 1;
-          }
-          85% {
-            opacity: 0.8;
-          }
-          100% {
-            transform: translate3d(0, 0, 180px) scale3d(1.35, 1.35, 1.35);
-            opacity: 0;
-          }
-        }
-
-        @keyframes tunnelZoomOut {
-          0% {
-            transform: translate3d(0, 0, 150px) scale3d(1.25, 1.25, 1.25);
-            opacity: 0;
-          }
-          30% {
-            opacity: 1;
-          }
-          80% {
-            opacity: 0.6;
-          }
-          100% {
-            transform: translate3d(0, 0, -200px) scale3d(0.65, 0.65, 0.65);
-            opacity: 0;
-          }
-        }
-      `}</style>
-
-      <div className="rounded-2xl glass-panel border border-white/10 shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-950/40 border-b border-white/10">
-          <div className="flex items-center gap-2 text-cyan-400">
-            <Layers className="w-4 h-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider font-mono">
-              3D Perspective List
-            </span>
+    <div className="fixed top-24 left-6 z-40 w-72 md:w-80">
+      <div className="rounded-2xl backdrop-blur-xl bg-slate-900/40 border border-white/10 shadow-2xl overflow-hidden transition-all">
+        {/* Header Bar */}
+        <div className="p-4 flex items-center justify-between border-b border-white/10 bg-slate-950/40">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-xs font-bold font-mono tracking-wider uppercase text-slate-200">
+              3D Perspective Layers
+            </h3>
           </div>
+
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-slate-400 hover:text-slate-200 p-1"
+            className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-colors"
+            title={isExpanded ? 'Collapse 3D Perspective Layer Panel' : 'Expand 3D Perspective Layer Panel'}
+            aria-label={isExpanded ? 'Collapse perspective layer list' : 'Expand perspective layer list'}
           >
-            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
 
+        {/* Collapsible Layer Content */}
         {isExpanded && (
-          <div className="p-4 space-y-4">
-            {/* Mode Selectors */}
+          <div className="p-4 space-y-4 text-sm animate-fadeIn">
+            {/* Perspective Mode Switcher */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Eye className="w-3.5 h-3.5 text-cyan-400" />
-                  Perspective Mode
-                </span>
-              </div>
+              <label 
+                className="text-[10px] font-mono text-slate-400 uppercase tracking-wider"
+                title="Choose 3D perspective depth camera projection mode for list item stack."
+              >
+                Depth Projection Mode
+              </label>
               <div className="grid grid-cols-2 gap-1.5">
-                {MODES.map((mode) => (
+                {(['Normal', 'Push-in', 'Tunnel Zoom In', 'Tunnel Zoom Out'] as PerspectiveMode[]).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setPerspectiveMode(mode)}
-                    className={`px-2.5 py-1.5 text-[11px] font-mono rounded-lg border transition-all truncate text-left ${
+                    title={`Set depth mode to ${mode}`}
+                    aria-label={`Set perspective mode ${mode}`}
+                    className={`px-2.5 py-1.5 text-[10px] font-mono uppercase rounded-lg border transition-all truncate ${
                       perspectiveMode === mode
-                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold shadow-sm shadow-cyan-500/20'
-                        : 'bg-slate-900/60 border-white/5 text-slate-400 hover:bg-white/5'
+                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold shadow-sm'
+                        : 'bg-slate-900/60 border-white/5 text-slate-400 hover:bg-white/5 hover:text-slate-200'
                     }`}
                   >
                     {mode}
@@ -196,7 +153,8 @@ export const PerspectiveListContainer: React.FC = () => {
                       <button
                         onClick={() => removeListItem(item.id)}
                         className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400 transition-opacity p-1"
-                        title="Remove item"
+                        title="Remove layer item from perspective list"
+                        aria-label={`Remove item ${item.label}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -212,8 +170,10 @@ export const PerspectiveListContainer: React.FC = () => {
                 type="text"
                 value={newItemText}
                 onChange={(e) => setNewItemText(e.target.value)}
-                placeholder="Add perspective item..."
-                className="flex-1 px-3 py-1.5 text-xs bg-slate-900 border border-white/10 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                placeholder="Add layer item..."
+                className="flex-1 px-3 py-1.5 text-xs bg-slate-900 border border-white/10 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-sans"
+                title="Enter label text for new 3D perspective item card"
+                aria-label="New layer item label text"
               />
               <input
                 type="text"
@@ -221,11 +181,14 @@ export const PerspectiveListContainer: React.FC = () => {
                 onChange={(e) => setNewItemTag(e.target.value)}
                 placeholder="Tag"
                 className="w-16 px-2 py-1.5 text-xs bg-slate-900 border border-white/10 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                title="Enter tag label for category"
+                aria-label="New layer item category tag"
               />
               <button
                 type="submit"
-                className="p-1.5 bg-cyan-500 text-slate-950 rounded-lg font-bold hover:bg-cyan-400 transition-colors"
-                title="Add to Perspective List"
+                className="p-1.5 bg-cyan-500 text-slate-950 rounded-lg font-bold hover:bg-cyan-400 transition-colors flex items-center justify-center"
+                title="Add item to perspective layer list"
+                aria-label="Add item button"
               >
                 <Plus className="w-4 h-4" />
               </button>
