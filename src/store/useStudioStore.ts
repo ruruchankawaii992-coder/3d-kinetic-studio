@@ -3,6 +3,7 @@ import { create, StateCreator } from 'zustand';
 export type MaterialType = 'Chrome/Metallic' | 'Frosted Glass' | 'Neon Glow' | 'Holographic/Iridescent' | 'Matte/Clay' | 'Gold/Brass';
 export type AnimationPreset = 'The Float' | 'The Vortex' | 'The Glitch' | 'The Wave' | 'The Assemble' | 'The Pulsar' | 'None';
 export type StageLighting = 'studio' | 'city' | 'sunset' | 'dawn' | 'night' | 'warehouse';
+export type CameraMode = 'Orbit' | 'TunnelZoom';
 export type PerspectiveMode = 'Normal' | 'Push-in' | 'Tunnel Zoom In' | 'Tunnel Zoom Out';
 
 export interface ListItem {
@@ -46,7 +47,13 @@ export interface StudioState {
   emissiveColor: string;
   material: MaterialType;
   materialParams: MaterialParams;
-  wireframe: boolean;
+  // Wireframe & Bloom properties
+  wireframeMode: boolean;
+  wireframeColor: string;
+  glowHalos: boolean;
+  bloomIntensity: number;
+  bloomThreshold: number;
+  bloomRadius: number;
 
   // Physics properties
   physics: PhysicsParams;
@@ -88,10 +95,6 @@ export interface StudioState {
   shadowRadius: number;
   castShadows: boolean;
 
-  // Perspective List Container properties
-  perspectiveMode: PerspectiveMode;
-  listItems: ListItem[];
-
   // Accessibility & Performance Optimizer properties
   reducedMotion: boolean;
   pixelRatioCap: number;
@@ -119,6 +122,12 @@ export interface StudioState {
   setMaterial: (material: MaterialType) => void;
   updateMaterialParams: (params: Partial<MaterialParams>) => void;
   setWireframe: (wireframe: boolean) => void;
+  setWireframeMode: (wireframeMode: boolean) => void;
+  setWireframeColor: (wireframeColor: string) => void;
+  setGlowHalos: (glowHalos: boolean) => void;
+  setBloomIntensity: (bloomIntensity: number) => void;
+  setBloomThreshold: (bloomThreshold: number) => void;
+  setBloomRadius: (bloomRadius: number) => void;
   updatePhysics: (physics: Partial<PhysicsParams>) => void;
   setAnimationPreset: (preset: AnimationPreset) => void;
   setSpeed: (speed: number) => void;
@@ -151,7 +160,8 @@ export interface StudioState {
   setShadowRadius: (radius: number) => void;
   setCastShadows: (cast: boolean) => void;
 
-  setPerspectiveMode: (mode: PerspectiveMode) => void;
+  setCameraMode: (cameraMode: CameraMode) => void;
+  setTunnelZoomSpeed: (tunnelZoomSpeed: number) => void;
   addListItem: (item: Omit<ListItem, 'id'>) => void;
   removeListItem: (id: string) => void;
 
@@ -261,7 +271,12 @@ const INITIAL_STATE = {
   emissiveColor: '#3F007F',
   material: 'Chrome/Metallic' as MaterialType,
   materialParams: { ...DEFAULT_MATERIAL_PARAMS, ...MATERIAL_PRESETS['Chrome/Metallic'] },
-  wireframe: false,
+  wireframeMode: false,
+  wireframeColor: '#00F0FF',
+  glowHalos: true,
+  bloomIntensity: 1.2,
+  bloomThreshold: 0.1,
+  bloomRadius: 0.5,
   physics: {
     extrusionDepth: 0.4,
     bevelThickness: 0.05,
@@ -282,7 +297,8 @@ const INITIAL_STATE = {
   directionalIntensity: 1.2,
   showGrid: true,
   cameraResetTrigger: 0,
-  perspectiveMode: 'Push-in' as PerspectiveMode,
+  cameraMode: 'Orbit' as CameraMode,
+  tunnelZoomSpeed: 1.0,
   listItems: DEFAULT_ITEMS,
 
   // NEW defaults
@@ -339,7 +355,13 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
     })),
   updateMaterialParams: (params: Partial<MaterialParams>) =>
     set((state) => ({ materialParams: { ...state.materialParams, ...params } })),
-  setWireframe: (wireframe: boolean) => set({ wireframe }),
+  setWireframe: (wireframe: boolean) => set({ wireframeMode: wireframe }),
+  setWireframeMode: (wireframeMode: boolean) => set({ wireframeMode }),
+  setWireframeColor: (wireframeColor: string) => set({ wireframeColor }),
+  setGlowHalos: (glowHalos: boolean) => set({ glowHalos }),
+  setBloomIntensity: (bloomIntensity: number) => set({ bloomIntensity }),
+  setBloomThreshold: (bloomThreshold: number) => set({ bloomThreshold }),
+  setBloomRadius: (bloomRadius: number) => set({ bloomRadius }),
   updatePhysics: (physics: Partial<PhysicsParams>) =>
     set((state: StudioState) => ({ physics: { ...state.physics, ...physics } })),
   setAnimationPreset: (animationPreset: AnimationPreset) => set({ animationPreset }),
@@ -373,7 +395,8 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
   setShadowRadius: (shadowRadius: number) => set({ shadowRadius }),
   setCastShadows: (castShadows: boolean) => set({ castShadows }),
 
-  setPerspectiveMode: (perspectiveMode: PerspectiveMode) => set({ perspectiveMode }),
+  setCameraMode: (cameraMode: CameraMode) => set({ cameraMode }),
+  setTunnelZoomSpeed: (tunnelZoomSpeed: number) => set({ tunnelZoomSpeed }),
   addListItem: (item: Omit<ListItem, 'id'>) =>
     set((state: StudioState) => ({
       listItems: [

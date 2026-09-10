@@ -14,7 +14,13 @@ export const Text3DMesh: React.FC = () => {
   const emissiveColor = useStudioStore((state: StudioState) => state.emissiveColor);
   const material = useStudioStore((state: StudioState) => state.material);
   const materialParams = useStudioStore((state: StudioState) => state.materialParams);
-  const wireframe = useStudioStore((state: StudioState) => state.wireframe);
+  const wireframeMode = useStudioStore((state: StudioState) => state.wireframeMode);
+  const wireframeColor = useStudioStore((state: StudioState) => state.wireframeColor);
+  const glowHalos = useStudioStore((state: StudioState) => state.glowHalos);
+  // Bloom parameters are used in SceneCanvas EffectComposer
+  void bloomIntensity;
+  void bloomThreshold;
+  void bloomRadius;
   const physics = useStudioStore((state: StudioState) => state.physics);
   const animationPreset = useStudioStore((state: StudioState) => state.animationPreset);
   const speed = useStudioStore((state: StudioState) => state.speed);
@@ -175,7 +181,7 @@ export const Text3DMesh: React.FC = () => {
             clearcoatRoughness={materialParams.clearcoatRoughness}
             reflectivity={1.0}
             envMapIntensity={2.0}
-            wireframe={wireframe}
+            wireframe={false}
           />
         );
       case 'Frosted Glass':
@@ -186,7 +192,7 @@ export const Text3DMesh: React.FC = () => {
             roughness={materialParams.roughness}
             thickness={materialParams.thickness}
             ior={materialParams.ior}
-            wireframe={wireframe}
+            wireframe={false}
             transparent
             opacity={0.95}
             envMapIntensity={1.5}
@@ -199,7 +205,7 @@ export const Text3DMesh: React.FC = () => {
             emissive={emissiveColor || color}
             emissiveIntensity={materialParams.emissiveIntensity * (intensity / 50 || 1)}
             roughness={materialParams.roughness}
-            wireframe={wireframe}
+            wireframe={false}
             toneMapped={false}
           />
         );
@@ -217,7 +223,7 @@ export const Text3DMesh: React.FC = () => {
             roughness={materialParams.roughness}
             clearcoat={materialParams.clearcoat}
             clearcoatRoughness={materialParams.clearcoatRoughness}
-            wireframe={wireframe}
+            wireframe={false}
             envMapIntensity={1.8}
           />
         );
@@ -227,7 +233,7 @@ export const Text3DMesh: React.FC = () => {
             color={color}
             metalness={materialParams.metalness}
             roughness={materialParams.roughness}
-            wireframe={wireframe}
+            wireframe={false}
           />
         );
       case 'Gold/Brass':
@@ -239,11 +245,11 @@ export const Text3DMesh: React.FC = () => {
             clearcoat={materialParams.clearcoat}
             clearcoatRoughness={materialParams.clearcoatRoughness}
             envMapIntensity={2.0}
-            wireframe={wireframe}
+            wireframe={false}
           />
         );
       default:
-        return <meshStandardMaterial color={color} wireframe={wireframe} />;
+        return <meshStandardMaterial color={color} wireframe={false} />;
     }
   };
 
@@ -252,25 +258,48 @@ export const Text3DMesh: React.FC = () => {
       <Center>
         <group>
           {charData.chars.map((char, i) => (
-            <Text3D
-              key={`${i}-${char}`}
-              ref={(el) => { if (el) charRefs.current[i] = el; }}
-              font={fontPath}
-              size={1.2}
-              height={physics.extrusionDepth}
-              curveSegments={lowPowerMode ? Math.max(3, Math.floor(physics.curveSegments / 2)) : physics.curveSegments}
-              bevelEnabled
-              bevelThickness={physics.bevelThickness}
-              bevelSize={physics.bevelSize}
-              bevelOffset={physics.bevelOffset}
-              bevelSegments={lowPowerMode ? Math.max(1, Math.floor(physics.bevelSegments / 2)) : physics.bevelSegments}
-              castShadow
-              receiveShadow
-              position={[charData.positions[i], 0, 0]}
-            >
-              {char}
-              {renderMaterial()}
-            </Text3D>
+            <React.Fragment key={`${i}-${char}`}>
+              <Text3D
+                ref={(el) => { if (el) charRefs.current[i] = el; }}
+                font={fontPath}
+                size={1.2}
+                height={physics.extrusionDepth}
+                curveSegments={lowPowerMode ? Math.max(3, Math.floor(physics.curveSegments / 2)) : physics.curveSegments}
+                bevelEnabled
+                bevelThickness={physics.bevelThickness}
+                bevelSize={physics.bevelSize}
+                bevelOffset={physics.bevelOffset}
+                bevelSegments={lowPowerMode ? Math.max(1, Math.floor(physics.bevelSegments / 2)) : physics.bevelSegments}
+                castShadow
+                receiveShadow
+                position={[charData.positions[i], 0, 0]}
+              >
+                {char}
+                {renderMaterial()}
+              </Text3D>
+              {wireframeMode && (
+                <Text3D
+                  font={fontPath}
+                  size={1.2}
+                  height={physics.extrusionDepth}
+                  curveSegments={lowPowerMode ? Math.max(3, Math.floor(physics.curveSegments / 2)) : physics.curveSegments}
+                  bevelEnabled
+                  bevelThickness={physics.bevelThickness}
+                  bevelSize={physics.bevelSize}
+                  bevelOffset={physics.bevelOffset}
+                  bevelSegments={lowPowerMode ? Math.max(1, Math.floor(physics.bevelSegments / 2)) : physics.bevelSegments}
+                  position={[charData.positions[i], 0, 0]}
+                >
+                  {char}
+                  <meshBasicMaterial
+                    color={wireframeColor}
+                    wireframe
+                    transparent
+                    opacity={glowHalos ? 0.9 : 0.6}
+                  />
+                </Text3D>
+              )}
+            </React.Fragment>
           ))}
         </group>
       </Center>
