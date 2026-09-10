@@ -1,6 +1,6 @@
 import { create, StateCreator } from 'zustand';
 
-export type MaterialType = 'Chrome/Metallic' | 'Frosted Glass' | 'Neon Glow' | 'Holographic/Iridescent';
+export type MaterialType = 'Chrome/Metallic' | 'Frosted Glass' | 'Neon Glow' | 'Holographic/Iridescent' | 'Matte/Clay' | 'Gold/Brass';
 export type AnimationPreset = 'The Float' | 'The Vortex' | 'The Glitch' | 'The Wave' | 'The Assemble' | 'The Pulsar' | 'None';
 export type StageLighting = 'studio' | 'city' | 'sunset' | 'dawn' | 'night' | 'warehouse';
 export type PerspectiveMode = 'Normal' | 'Push-in' | 'Tunnel Zoom In' | 'Tunnel Zoom Out';
@@ -10,6 +10,21 @@ export interface ListItem {
   label: string;
   tag: string;
   color: string;
+}
+
+export interface MaterialParams {
+  metalness: number;
+  roughness: number;
+  clearcoat: number;
+  clearcoatRoughness: number;
+  transmission: number;
+  ior: number;
+  thickness: number;
+  emissiveIntensity: number;
+  iridescence: number;
+  iridescenceIOR: number;
+  iridescenceThicknessMin: number;
+  iridescenceThicknessMax: number;
 }
 
 export interface PhysicsParams {
@@ -30,6 +45,7 @@ export interface StudioState {
   color: string;
   emissiveColor: string;
   material: MaterialType;
+  materialParams: MaterialParams;
   wireframe: boolean;
 
   // Physics properties
@@ -59,6 +75,7 @@ export interface StudioState {
   setColor: (color: string) => void;
   setEmissiveColor: (color: string) => void;
   setMaterial: (material: MaterialType) => void;
+  updateMaterialParams: (params: Partial<MaterialParams>) => void;
   setWireframe: (wireframe: boolean) => void;
   updatePhysics: (physics: Partial<PhysicsParams>) => void;
   setAnimationPreset: (preset: AnimationPreset) => void;
@@ -77,6 +94,75 @@ export interface StudioState {
   resetAll: () => void;
 }
 
+const DEFAULT_MATERIAL_PARAMS: MaterialParams = {
+  metalness: 0.95,
+  roughness: 0.12,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.1,
+  transmission: 0,
+  ior: 1.5,
+  thickness: 0,
+  emissiveIntensity: 1.0,
+  iridescence: 0,
+  iridescenceIOR: 1.3,
+  iridescenceThicknessMin: 100,
+  iridescenceThicknessMax: 400,
+};
+
+const MATERIAL_PRESETS: Record<MaterialType, Partial<MaterialParams>> = {
+  'Chrome/Metallic': {
+    metalness: 1.0,
+    roughness: 0.05,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
+    transmission: 0,
+    iridescence: 0,
+  },
+  'Frosted Glass': {
+    metalness: 0,
+    roughness: 0.15,
+    transmission: 1.0,
+    ior: 1.45,
+    thickness: 2.0,
+    clearcoat: 0,
+    iridescence: 0,
+  },
+  'Neon Glow': {
+    metalness: 0,
+    roughness: 0.5,
+    emissiveIntensity: 2.5,
+    transmission: 0,
+    clearcoat: 0,
+    iridescence: 0,
+  },
+  'Holographic/Iridescent': {
+    metalness: 0.5,
+    roughness: 0.2,
+    iridescence: 1.0,
+    iridescenceIOR: 1.8,
+    iridescenceThicknessMin: 120,
+    iridescenceThicknessMax: 450,
+    clearcoat: 0.5,
+    transmission: 0,
+  },
+  'Matte/Clay': {
+    metalness: 0,
+    roughness: 0.8,
+    clearcoat: 0,
+    transmission: 0,
+    iridescence: 0,
+    emissiveIntensity: 0,
+  },
+  'Gold/Brass': {
+    metalness: 1.0,
+    roughness: 0.15,
+    clearcoat: 0.8,
+    clearcoatRoughness: 0.2,
+    transmission: 0,
+    iridescence: 0,
+  },
+};
+
 const DEFAULT_ITEMS: ListItem[] = [
   { id: '1', label: '3D Space Mesh', tag: 'Kinetic', color: '#00F0FF' },
   { id: '2', label: 'Frosted Material', tag: 'Physical', color: '#9D4EDD' },
@@ -91,6 +177,7 @@ const INITIAL_STATE = {
   color: '#00F0FF',
   emissiveColor: '#3F007F',
   material: 'Chrome/Metallic' as MaterialType,
+  materialParams: { ...DEFAULT_MATERIAL_PARAMS, ...MATERIAL_PRESETS['Chrome/Metallic'] },
   wireframe: false,
   physics: {
     extrusionDepth: 0.4,
@@ -123,7 +210,13 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
   setFont: (font: string) => set({ font }),
   setColor: (color: string) => set({ color }),
   setEmissiveColor: (emissiveColor: string) => set({ emissiveColor }),
-  setMaterial: (material: MaterialType) => set({ material }),
+  setMaterial: (material: MaterialType) => 
+    set((state) => ({ 
+      material, 
+      materialParams: { ...state.materialParams, ...MATERIAL_PRESETS[material] } 
+    })),
+  updateMaterialParams: (params: Partial<MaterialParams>) =>
+    set((state) => ({ materialParams: { ...state.materialParams, ...params } })),
   setWireframe: (wireframe: boolean) => set({ wireframe }),
   updatePhysics: (physics: Partial<PhysicsParams>) =>
     set((state: StudioState) => ({ physics: { ...state.physics, ...physics } })),

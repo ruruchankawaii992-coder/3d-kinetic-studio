@@ -13,10 +13,12 @@ const FONTS = [
 ];
 
 const MATERIALS: { name: MaterialType; desc: string }[] = [
-  { name: 'Chrome/Metallic', desc: 'Shiny reflective metal with envmap highlights' },
-  { name: 'Frosted Glass', desc: 'Semi-transparent refractive glass shader' },
-  { name: 'Neon Glow', desc: 'Self-illuminating emissive neon tube light' },
-  { name: 'Holographic/Iridescent', desc: 'Rainbow chroma-shifting surface sheen' },
+  { name: 'Chrome/Metallic', desc: 'Shiny reflective metal with envmap clearcoat' },
+  { name: 'Frosted Glass', desc: 'Semi-transparent refractive physical glass shader' },
+  { name: 'Neon Glow', desc: 'Self-illuminating emissive neon light beam' },
+  { name: 'Holographic/Iridescent', desc: 'Rainbow thin-film interference sheen' },
+  { name: 'Matte/Clay', desc: 'Soft non-reflective physical diffuse clay' },
+  { name: 'Gold/Brass', desc: 'Lustrous polished metallic gold sheen' },
 ];
 
 const PRESETS: { name: AnimationPreset; desc: string }[] = [
@@ -46,6 +48,8 @@ export const ControlDrawer: React.FC = () => {
     setEmissiveColor,
     material,
     setMaterial,
+    materialParams,
+    updateMaterialParams,
     wireframe,
     setWireframe,
     physics,
@@ -268,6 +272,251 @@ export const ControlDrawer: React.FC = () => {
                         <span className="text-xs font-mono text-slate-300 uppercase">{emissiveColor}</span>
                       </div>
                     </div>
+                  )}
+                </div>
+
+                {/* Real-time Material Parameter Tweaking */}
+                <div className="space-y-3 pt-3 border-t border-white/10">
+                  <div className="flex items-center justify-between text-xs font-mono text-cyan-400 uppercase">
+                    <span>Shader Parameters ({material})</span>
+                  </div>
+
+                  {/* Metalness */}
+                  {(material === 'Chrome/Metallic' || material === 'Holographic/Iridescent' || material === 'Matte/Clay' || material === 'Gold/Brass') && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-slate-400 font-mono">
+                        <span>Metalness</span>
+                        <span>{materialParams.metalness.toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={materialParams.metalness}
+                        onChange={(e) => updateMaterialParams({ metalness: parseFloat(e.target.value) })}
+                        className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                        title="Adjust surface metalness reflection ratio"
+                        aria-label="Metalness parameter"
+                      />
+                    </div>
+                  )}
+
+                  {/* Roughness */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-slate-400 font-mono">
+                      <span>Roughness</span>
+                      <span>{materialParams.roughness.toFixed(2)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={materialParams.roughness}
+                      onChange={(e) => updateMaterialParams({ roughness: parseFloat(e.target.value) })}
+                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      title="Adjust surface specular roughness dispersion"
+                      aria-label="Roughness parameter"
+                    />
+                  </div>
+
+                  {/* Clearcoat & Clearcoat Roughness */}
+                  {(material === 'Chrome/Metallic' || material === 'Holographic/Iridescent' || material === 'Gold/Brass') && (
+                    <>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Clearcoat</span>
+                          <span>{materialParams.clearcoat.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={materialParams.clearcoat}
+                          onChange={(e) => updateMaterialParams({ clearcoat: parseFloat(e.target.value) })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust clearcoat gloss layer intensity"
+                          aria-label="Clearcoat parameter"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Clearcoat Roughness</span>
+                          <span>{materialParams.clearcoatRoughness.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={materialParams.clearcoatRoughness}
+                          onChange={(e) => updateMaterialParams({ clearcoatRoughness: parseFloat(e.target.value) })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust clearcoat layer blur/roughness"
+                          aria-label="Clearcoat Roughness parameter"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Transmission & Thickness & IOR */}
+                  {material === 'Frosted Glass' && (
+                    <>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Transmission</span>
+                          <span>{materialParams.transmission.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={materialParams.transmission}
+                          onChange={(e) => updateMaterialParams({ transmission: parseFloat(e.target.value) })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust optical transparency transmission"
+                          aria-label="Transmission parameter"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Glass Thickness</span>
+                          <span>{materialParams.thickness.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.1"
+                          max="5"
+                          step="0.1"
+                          value={materialParams.thickness}
+                          onChange={(e) => updateMaterialParams({ thickness: parseFloat(e.target.value) })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust physical volumetric glass thickness"
+                          aria-label="Thickness parameter"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Refractive Index (IOR)</span>
+                          <span>{materialParams.ior.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1.0"
+                          max="2.33"
+                          step="0.01"
+                          value={materialParams.ior}
+                          onChange={(e) => updateMaterialParams({ ior: parseFloat(e.target.value) })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust index of refraction"
+                          aria-label="Refractive Index IOR parameter"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Emissive Intensity */}
+                  {material === 'Neon Glow' && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-slate-400 font-mono">
+                        <span>Emissive Intensity</span>
+                        <span>{materialParams.emissiveIntensity.toFixed(1)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="10"
+                        step="0.1"
+                        value={materialParams.emissiveIntensity}
+                        onChange={(e) => updateMaterialParams({ emissiveIntensity: parseFloat(e.target.value) })}
+                        className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                        title="Adjust glow intensity bloom brightness"
+                        aria-label="Emissive Intensity parameter"
+                      />
+                    </div>
+                  )}
+
+                  {/* Iridescence & Thin-film interference */}
+                  {material === 'Holographic/Iridescent' && (
+                    <>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Iridescence Sheen</span>
+                          <span>{materialParams.iridescence.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={materialParams.iridescence}
+                          onChange={(e) => updateMaterialParams({ iridescence: parseFloat(e.target.value) })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust iridescence thin-film shift intensity"
+                          aria-label="Iridescence Sheen parameter"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Thin-Film IOR</span>
+                          <span>{materialParams.iridescenceIOR.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1.0"
+                          max="2.33"
+                          step="0.01"
+                          value={materialParams.iridescenceIOR}
+                          onChange={(e) => updateMaterialParams({ iridescenceIOR: parseFloat(e.target.value) })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust thin-film layer refractive index"
+                          aria-label="Thin-film IOR parameter"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Thin-Film Min Thickness (nm)</span>
+                          <span>{Math.round(materialParams.iridescenceThicknessMin)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="600"
+                          step="10"
+                          value={materialParams.iridescenceThicknessMin}
+                          onChange={(e) => updateMaterialParams({ iridescenceThicknessMin: parseFloat(e.target.value) })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust minimum thin-film thickness in nanometers"
+                          aria-label="Thin-film minimum thickness parameter"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span>Thin-Film Max Thickness (nm)</span>
+                          <span>{Math.round(materialParams.iridescenceThicknessMax)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="100"
+                          max="1200"
+                          step="10"
+                          value={materialParams.iridescenceThicknessMax}
+                          onChange={(e) => updateMaterialParams({ iridescenceThicknessMax: parseFloat(e.target.value) })}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust maximum thin-film thickness in nanometers"
+                          aria-label="Thin-film maximum thickness parameter"
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
 

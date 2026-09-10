@@ -76,7 +76,7 @@ export const SceneCanvas: React.FC = () => {
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
           className="w-full h-full"
         >
-          <color attach="background" args={['#0B0E14']} />
+          <color attach="background" args={['#05070B']} />
           
           {/* Lights */}
           <ambientLight intensity={ambientIntensity} />

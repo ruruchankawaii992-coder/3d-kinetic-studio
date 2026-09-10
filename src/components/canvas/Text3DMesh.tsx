@@ -14,6 +14,7 @@ export const Text3DMesh: React.FC = () => {
   const color = useStudioStore((state: StudioState) => state.color);
   const emissiveColor = useStudioStore((state: StudioState) => state.emissiveColor);
   const material = useStudioStore((state: StudioState) => state.material);
+  const materialParams = useStudioStore((state: StudioState) => state.materialParams);
   const wireframe = useStudioStore((state: StudioState) => state.wireframe);
   const physics = useStudioStore((state: StudioState) => state.physics);
   const animationPreset = useStudioStore((state: StudioState) => state.animationPreset);
@@ -134,25 +135,29 @@ export const Text3DMesh: React.FC = () => {
     switch (material) {
       case 'Chrome/Metallic':
         return (
-          <meshStandardMaterial
+          <meshPhysicalMaterial
             color={color}
-            metalness={0.95}
-            roughness={0.12}
+            metalness={materialParams.metalness}
+            roughness={materialParams.roughness}
+            clearcoat={materialParams.clearcoat}
+            clearcoatRoughness={materialParams.clearcoatRoughness}
+            reflectivity={1.0}
+            envMapIntensity={2.0}
             wireframe={wireframe}
-            envMapIntensity={1.8}
           />
         );
       case 'Frosted Glass':
         return (
           <meshPhysicalMaterial
             color={color}
-            transmission={0.88}
-            roughness={0.28}
-            thickness={1.5}
-            ior={1.52}
+            transmission={materialParams.transmission}
+            roughness={materialParams.roughness}
+            thickness={materialParams.thickness}
+            ior={materialParams.ior}
             wireframe={wireframe}
             transparent
-            opacity={0.92}
+            opacity={0.95}
+            envMapIntensity={1.5}
           />
         );
       case 'Neon Glow':
@@ -160,8 +165,8 @@ export const Text3DMesh: React.FC = () => {
           <meshStandardMaterial
             color={color}
             emissive={emissiveColor || color}
-            emissiveIntensity={2.5 * (intensity / 50 || 1)}
-            roughness={0.3}
+            emissiveIntensity={materialParams.emissiveIntensity * (intensity / 50 || 1)}
+            roughness={materialParams.roughness}
             wireframe={wireframe}
             toneMapped={false}
           />
@@ -170,11 +175,38 @@ export const Text3DMesh: React.FC = () => {
         return (
           <meshPhysicalMaterial
             color={color}
-            iridescence={1}
-            iridescenceIOR={1.8}
-            iridescenceThicknessRange={[120, 450]}
-            metalness={0.65}
-            roughness={0.22}
+            iridescence={materialParams.iridescence}
+            iridescenceIOR={materialParams.iridescenceIOR}
+            iridescenceThicknessRange={[
+              materialParams.iridescenceThicknessMin,
+              materialParams.iridescenceThicknessMax,
+            ]}
+            metalness={materialParams.metalness}
+            roughness={materialParams.roughness}
+            clearcoat={materialParams.clearcoat}
+            clearcoatRoughness={materialParams.clearcoatRoughness}
+            wireframe={wireframe}
+            envMapIntensity={1.8}
+          />
+        );
+      case 'Matte/Clay':
+        return (
+          <meshStandardMaterial
+            color={color}
+            metalness={materialParams.metalness}
+            roughness={materialParams.roughness}
+            wireframe={wireframe}
+          />
+        );
+      case 'Gold/Brass':
+        return (
+          <meshPhysicalMaterial
+            color={color || '#FFD700'}
+            metalness={materialParams.metalness}
+            roughness={materialParams.roughness}
+            clearcoat={materialParams.clearcoat}
+            clearcoatRoughness={materialParams.clearcoatRoughness}
+            envMapIntensity={2.0}
             wireframe={wireframe}
           />
         );
