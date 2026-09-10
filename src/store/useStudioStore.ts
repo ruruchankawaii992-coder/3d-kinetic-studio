@@ -89,7 +89,8 @@ export interface StudioState {
   directionalColor: string;
   directionalPosition: [number, number, number];
 
-  // Shadows
+  cameraMode: CameraMode;
+  tunnelZoomSpeed: number;
   shadowMapSize: number;
   shadowBias: number;
   shadowRadius: number;
@@ -159,9 +160,8 @@ export interface StudioState {
   setShadowBias: (bias: number) => void;
   setShadowRadius: (radius: number) => void;
   setCastShadows: (cast: boolean) => void;
-
-  setCameraMode: (cameraMode: CameraMode) => void;
-  setTunnelZoomSpeed: (tunnelZoomSpeed: number) => void;
+  setCameraMode: (mode: CameraMode) => void;
+  setTunnelZoomSpeed: (speed: number) => void;
   addListItem: (item: Omit<ListItem, 'id'>) => void;
   removeListItem: (id: string) => void;
 
