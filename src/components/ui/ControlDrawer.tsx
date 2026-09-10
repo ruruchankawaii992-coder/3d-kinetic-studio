@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap, Download, Camera, Film } from 'lucide-react';
 import { useStudioStore, MaterialType, AnimationPreset, StageLighting } from '../../store/useStudioStore';
 
-type TabType = 'design' | 'physics' | 'motion' | 'lighting' | 'export' | 'performance';
+type TabType = 'design' | 'physics' | 'motion' | 'camera' | 'lighting' | 'export' | 'performance';
 
 const FONTS = [
   { label: 'Helvetiker Bold', value: '/fonts/helvetiker_bold.typeface.json' },
@@ -50,8 +50,8 @@ export const ControlDrawer: React.FC = () => {
     setMaterial,
     materialParams,
     updateMaterialParams,
-    wireframe,
-    setWireframe,
+    wireframeMode,
+    setWireframeMode,
     physics,
     updatePhysics,
     animationPreset,
@@ -117,6 +117,10 @@ export const ControlDrawer: React.FC = () => {
     lowPowerMode,
     setLowPowerMode,
 
+    cameraMode,
+    setCameraMode,
+    tunnelZoomSpeed,
+    setTunnelZoomSpeed,
     capturePngFn,
     recordWebmFn,
     isExporting,
@@ -184,6 +188,18 @@ export const ControlDrawer: React.FC = () => {
             aria-label="Open Kinetic Motion tab"
           >
             <Play className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setActiveTab('camera'); setIsOpen(true); }}
+            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+              activeTab === 'camera' && isOpen
+                ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+            }`}
+            title="Camera & TunnelZoom: Toggle between standard OrbitControls and modular TunnelZoom camera pathing mode"
+            aria-label="Open Camera and TunnelZoom tab"
+          >
+            <Camera className="w-4 h-4" />
           </button>
           <button
             onClick={() => { setActiveTab('lighting'); setIsOpen(true); }}
@@ -609,16 +625,16 @@ export const ControlDrawer: React.FC = () => {
                     Wireframe Mode
                   </span>
                   <button
-                    onClick={() => setWireframe(!wireframe)}
+                    onClick={() => setWireframeMode(!wireframeMode)}
                     className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                      wireframe ? 'bg-cyan-500' : 'bg-slate-800'
+                      wireframeMode ? 'bg-cyan-500' : 'bg-slate-800'
                     }`}
-                    title={wireframe ? 'Disable wireframe mode' : 'Enable wireframe mode'}
+                    title={wireframeMode ? 'Disable wireframe mode' : 'Enable wireframe mode'}
                     aria-label="Toggle wireframe mode"
                   >
                     <div
                       className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                        wireframe ? 'translate-x-6' : 'translate-x-0'
+                        wireframeMode ? 'translate-x-6' : 'translate-x-0'
                       }`}
                     />
                   </button>
@@ -917,6 +933,65 @@ export const ControlDrawer: React.FC = () => {
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'camera' && (
+              <div className="space-y-6 animate-fadeIn pb-8">
+                <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                  <Camera className="w-4 h-4" />
+                  <span>Camera & TunnelZoom Mode</span>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Switch between standard OrbitControls and modular TunnelZoom mode that smoothly transitions through character glyph holes.
+                </p>
+
+                {/* Camera Mode Selector */}
+                <div className="space-y-3">
+                  <label className="text-xs font-mono text-slate-400 uppercase">Camera Mode</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['Orbit', 'TunnelZoom'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setCameraMode(mode)}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          cameraMode === mode
+                            ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-medium shadow-sm'
+                            : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                        }`}
+                        title={`Switch camera to ${mode} mode`}
+                        aria-label={`Switch camera to ${mode} mode`}
+                      >
+                        <div className="font-bold text-xs">{mode === 'TunnelZoom' ? 'Tunnel Zoom' : 'Standard Orbit'}</div>
+                        <div className="text-[9px] opacity-75 mt-0.5">
+                          {mode === 'TunnelZoom' ? 'Smooth flight through glyph holes' : 'Interactive 360 orbit controls'}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* TunnelZoom Speed */}
+                {cameraMode === 'TunnelZoom' && (
+                  <div className="space-y-2 pt-2 animate-fadeIn">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-slate-400 uppercase">Tunnel Zoom Speed</span>
+                      <span className="text-cyan-400">{tunnelZoomSpeed.toFixed(1)}x</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.2"
+                      max="3.0"
+                      step="0.1"
+                      value={tunnelZoomSpeed}
+                      onChange={(e) => setTunnelZoomSpeed(parseFloat(e.target.value))}
+                      className="w-full accent-cyan-400 cursor-pointer"
+                      title="Adjust camera tunnel zoom speed"
+                      aria-label="Tunnel zoom speed slider"
+                    />
+                  </div>
+                )}
               </div>
             )}
 

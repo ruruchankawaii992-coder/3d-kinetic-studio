@@ -17,10 +17,6 @@ export const Text3DMesh: React.FC = () => {
   const wireframeMode = useStudioStore((state: StudioState) => state.wireframeMode);
   const wireframeColor = useStudioStore((state: StudioState) => state.wireframeColor);
   const glowHalos = useStudioStore((state: StudioState) => state.glowHalos);
-  // Bloom parameters are used in SceneCanvas EffectComposer
-  void bloomIntensity;
-  void bloomThreshold;
-  void bloomRadius;
   const physics = useStudioStore((state: StudioState) => state.physics);
   const animationPreset = useStudioStore((state: StudioState) => state.animationPreset);
   const speed = useStudioStore((state: StudioState) => state.speed);

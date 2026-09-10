@@ -61,7 +61,7 @@ export const MotionDock: React.FC = () => {
       color: store.color,
       emissiveColor: store.emissiveColor,
       material: store.material,
-      wireframe: store.wireframe,
+      wireframe: store.wireframeMode,
       physics: store.physics,
       animationPreset: store.animationPreset,
       speed: store.speed,
@@ -72,7 +72,7 @@ export const MotionDock: React.FC = () => {
       ambientIntensity: store.ambientIntensity,
       directionalIntensity: store.directionalIntensity,
       showGrid: store.showGrid,
-      perspectiveMode: store.perspectiveMode,
+      cameraMode: store.cameraMode,
       listItems: store.listItems,
     };
     

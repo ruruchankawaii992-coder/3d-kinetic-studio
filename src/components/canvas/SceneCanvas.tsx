@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { Text3DMesh } from './Text3DMesh';
 import { useStudioStore, StudioState } from '../../store/useStudioStore';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 class CanvasErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback?: React.ReactNode },
@@ -35,6 +36,18 @@ class CanvasErrorBoundary extends React.Component<
 const CameraController: React.FC = () => {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const cameraResetTrigger = useStudioStore((state: StudioState) => state.cameraResetTrigger);
+  const cameraMode = useStudioStore((state: StudioState) => state.cameraMode);
+  const tunnelZoomSpeed = useStudioStore((state: StudioState) => state.tunnelZoomSpeed);
+
+  useFrame((state) => {
+    if (cameraMode === 'TunnelZoom') {
+      const t = state.clock.getElapsedTime() * tunnelZoomSpeed;
+      // Simple oscillating zoom through the center
+      const z = 4 + Math.sin(t) * 2;
+      state.camera.position.set(0, 0, z);
+      state.camera.lookAt(0, 0, 0);
+    }
+  });
 
   useEffect(() => {
     if (controlsRef.current) {
@@ -50,6 +63,7 @@ const CameraController: React.FC = () => {
       minDistance={2}
       maxDistance={20}
       makeDefault
+      enabled={cameraMode === 'Orbit'}
     />
   );
 };
@@ -255,6 +269,11 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
   const targetFps = useStudioStore((state: StudioState) => state.targetFps);
   const lowPowerMode = useStudioStore((state: StudioState) => state.lowPowerMode);
 
+  const bloomIntensity = useStudioStore((state: StudioState) => state.bloomIntensity);
+  const bloomThreshold = useStudioStore((state: StudioState) => state.bloomThreshold);
+  const bloomRadius = useStudioStore((state: StudioState) => state.bloomRadius);
+  const glowHalos = useStudioStore((state: StudioState) => state.glowHalos);
+
   const effectiveCastShadows = shadowQuality === 'off' ? false : castShadows;
   const effectiveShadowMapSize = 
     shadowQuality === 'low' ? 512 :
@@ -341,6 +360,18 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
               <Text3DMesh />
             </Suspense>
           </CanvasErrorBoundary>
+
+          {/* Postprocessing Effect Composer & Bloom */}
+          {glowHalos && bloomIntensity > 0 && (
+            <EffectComposer multisampling={lowPowerMode ? 0 : 4}>
+              <Bloom
+                intensity={bloomIntensity}
+                luminanceThreshold={bloomThreshold}
+                luminanceSmoothing={0.9}
+                radius={bloomRadius}
+              />
+            </EffectComposer>
+          )}
         </Canvas>
       </ErrorBoundary>
     </div>
