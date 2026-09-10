@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap } from 'lucide-react';
+import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap, Download, Camera, Film } from 'lucide-react';
 import { useStudioStore, MaterialType, AnimationPreset, StageLighting } from '../../store/useStudioStore';
 
-type TabType = 'design' | 'physics' | 'motion' | 'lighting';
+type TabType = 'design' | 'physics' | 'motion' | 'lighting' | 'export';
 
 const FONTS = [
   { label: 'Helvetiker Bold', value: '/fonts/helvetiker_bold.typeface.json' },
@@ -106,7 +106,19 @@ export const ControlDrawer: React.FC = () => {
     setShadowRadius,
     castShadows,
     setCastShadows,
+
+    capturePngFn,
+    recordWebmFn,
+    isExporting,
+    exportProgress,
+    exportStatus,
+    setExportState,
   } = useStudioStore();
+
+  const [transparentBg, setTransparentBg] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(8);
+  const [videoFps, setVideoFps] = useState(60);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   return (
     <aside
@@ -174,6 +186,18 @@ export const ControlDrawer: React.FC = () => {
             aria-label="Open Stage and Lighting tab"
           >
             <Sun className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setActiveTab('export'); setIsOpen(true); }}
+            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+              activeTab === 'export' && isOpen
+                ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+            }`}
+            title="Export Studio: High-res 4K PNG snapshots and seamless 60fps WebM video loops"
+            aria-label="Open Export tab"
+          >
+            <Download className="w-4 h-4" />
           </button>
         </div>
 
@@ -1164,6 +1188,184 @@ export const ControlDrawer: React.FC = () => {
                     <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${showGrid ? 'translate-x-6' : 'translate-x-0'}`} />
                   </button>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'export' && (
+              <div className="space-y-6 animate-fadeIn pb-8">
+                <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                  <Download className="w-4 h-4" />
+                  <span>4K PNG & WebM Export Engine</span>
+                </div>
+
+                {errorMessage && (
+                  <div className="p-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300 text-xs font-mono">
+                    {errorMessage}
+                  </div>
+                )}
+
+                {/* --- Section 1: High-Res 4K PNG Snapshot --- */}
+                <div className="space-y-4 p-4 bg-slate-950/40 border border-white/10 rounded-2xl">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-cyan-300 uppercase font-mono">
+                    <Camera className="w-4 h-4" />
+                    <span>High-Resolution 4K PNG Snapshot</span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Capture an ultra-sharp 3840x2160 pixel PNG image preserving current lighting, camera angle, and material shaders.
+                  </p>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-mono text-slate-400 uppercase">Transparent Alpha Background</span>
+                    <button
+                      onClick={() => setTransparentBg(!transparentBg)}
+                      className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        transparentBg ? 'bg-cyan-500' : 'bg-slate-800'
+                      }`}
+                      title={transparentBg ? 'Disable transparent alpha background' : 'Enable transparent alpha background'}
+                      aria-label="Toggle transparent alpha background"
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          transparentBg ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      if (!capturePngFn) {
+                        setErrorMessage('Export engine not initialized. Please ensure 3D canvas is fully loaded.');
+                        return;
+                      }
+                      setErrorMessage(null);
+                      setExportState({ isExporting: true, exportProgress: 20, exportStatus: 'Rendering 4K Canvas...' });
+                      try {
+                        setExportState({ exportProgress: 60, exportStatus: 'Encoding PNG 3840x2160...' });
+                        const blob = await capturePngFn(transparentBg);
+                        setExportState({ exportProgress: 90, exportStatus: 'Triggering Download...' });
+                        
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `typography-4k-${Date.now()}.png`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+
+                        setExportState({ isExporting: false, exportProgress: 100, exportStatus: 'PNG Snapshot Saved Successfully!' });
+                      } catch (err: any) {
+                        console.error('PNG export failed:', err);
+                        setErrorMessage(err?.message || 'Failed to capture 4K PNG snapshot.');
+                        setExportState({ isExporting: false, exportProgress: 0, exportStatus: 'Export Failed' });
+                      }
+                    }}
+                    disabled={isExporting}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-mono tracking-wider uppercase"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Capture 4K PNG Snapshot</span>
+                  </button>
+                </div>
+
+                {/* --- Section 2: Seamless 60fps WebM Video Loop --- */}
+                <div className="space-y-4 p-4 bg-slate-950/40 border border-white/10 rounded-2xl">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-purple-300 uppercase font-mono">
+                    <Film className="w-4 h-4" />
+                    <span>Seamless 60fps WebM Video Loop</span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Record a high-performance 60fps WebM animation loop with canvas frame capture for seamless looping playback.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-slate-400 uppercase">Duration (Seconds)</label>
+                      <select
+                        value={videoDuration}
+                        onChange={(e) => setVideoDuration(parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-xl text-slate-100 text-xs font-mono"
+                      >
+                        <option value={5}>5 Seconds</option>
+                        <option value={8}>8 Seconds</option>
+                        <option value={10}>10 Seconds</option>
+                        <option value={15}>15 Seconds</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-slate-400 uppercase">Frame Rate (FPS)</label>
+                      <select
+                        value={videoFps}
+                        onChange={(e) => setVideoFps(parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-xl text-slate-100 text-xs font-mono"
+                      >
+                        <option value={60}>60 FPS (Smooth)</option>
+                        <option value={30}>30 FPS (Standard)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      if (!recordWebmFn) {
+                        setErrorMessage('Export engine not initialized. Please ensure 3D canvas is fully loaded.');
+                        return;
+                      }
+                      setErrorMessage(null);
+                      setExportState({ isExporting: true, exportProgress: 0, exportStatus: 'Starting WebM Recording...' });
+                      try {
+                        const blob = await recordWebmFn(videoDuration, videoFps, (progress) => {
+                          const pct = Math.round(progress * 100);
+                          setExportState({ exportProgress: pct, exportStatus: `Recording Video (${pct}%)...` });
+                        });
+
+                        setExportState({ exportProgress: 95, exportStatus: 'Encoding WebM Video...' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `typography-loop-${Date.now()}.webm`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+
+                        setExportState({ isExporting: false, exportProgress: 100, exportStatus: 'WebM Video Loop Saved Successfully!' });
+                      } catch (err: any) {
+                        console.error('WebM export failed:', err);
+                        setErrorMessage(err?.message || 'Failed to record WebM video loop.');
+                        setExportState({ isExporting: false, exportProgress: 0, exportStatus: 'Export Failed' });
+                      }
+                    }}
+                    disabled={isExporting}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-mono tracking-wider uppercase"
+                  >
+                    <Film className="w-4 h-4" />
+                    <span>Record 60fps WebM Loop</span>
+                  </button>
+                </div>
+
+                {/* --- Section 3: Progress Bar & Status Indicator --- */}
+                {isExporting && (
+                  <div className="space-y-2 p-4 bg-slate-950/80 border border-cyan-500/30 rounded-2xl animate-pulse">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-cyan-400">{exportStatus}</span>
+                      <span className="text-cyan-400 font-bold">{exportProgress}%</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-white/10">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-150"
+                        style={{ width: `${exportProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {!isExporting && exportStatus !== 'Ready' && (
+                  <div className="p-3 bg-slate-950/60 border border-white/10 rounded-xl text-center text-xs font-mono text-emerald-400">
+                    {exportStatus}
+                  </div>
+                )}
               </div>
             )}
           </div>

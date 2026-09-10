@@ -97,6 +97,13 @@ export interface StudioState {
   maxTime: number;
   isScrubbing: boolean;
 
+  // Export properties
+  isExporting: boolean;
+  exportProgress: number;
+  exportStatus: string;
+  capturePngFn: ((transparent: boolean) => Promise<Blob>) | null;
+  recordWebmFn: ((duration: number, fps: number, onProgress: (p: number) => void) => Promise<Blob>) | null;
+
   // Setters
   setText: (text: string) => void;
   setFont: (font: string) => void;
@@ -145,6 +152,13 @@ export interface StudioState {
   setCurrentTime: (time: number) => void;
   setMaxTime: (maxTime: number) => void;
   setIsScrubbing: (isScrubbing: boolean) => void;
+
+  // Export setters
+  setExportFns: (
+    capturePngFn: ((transparent: boolean) => Promise<Blob>) | null,
+    recordWebmFn: ((duration: number, fps: number, onProgress: (p: number) => void) => Promise<Blob>) | null
+  ) => void;
+  setExportState: (state: Partial<{ isExporting: boolean; exportProgress: number; exportStatus: string }>) => void;
 
   resetAll: () => void;
 }
@@ -281,6 +295,13 @@ const INITIAL_STATE = {
   currentTime: 0,
   maxTime: Math.PI * 4, // 12.566s harmonic period (allows 0.5Hz harmonics)
   isScrubbing: false,
+
+  // Export defaults
+  isExporting: false,
+  exportProgress: 0,
+  exportStatus: 'Ready',
+  capturePngFn: null,
+  recordWebmFn: null,
 };
 
 const storeCreator: StateCreator<StudioState> = (set) => ({
@@ -347,6 +368,9 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
   setCurrentTime: (currentTime: number) => set({ currentTime }),
   setMaxTime: (maxTime: number) => set({ maxTime }),
   setIsScrubbing: (isScrubbing: boolean) => set({ isScrubbing }),
+
+  setExportFns: (capturePngFn, recordWebmFn) => set({ capturePngFn, recordWebmFn }),
+  setExportState: (updates) => set((state) => ({ ...state, ...updates })),
 
   resetAll: () => set({ ...INITIAL_STATE }),
 });

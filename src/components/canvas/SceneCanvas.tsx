@@ -101,7 +101,142 @@ const OrbitingLight: React.FC = () => {
   );
 };
 
-export const SceneCanvas: React.FC = () => {
+import { forwardRef, useImperativeHandle } from 'react';
+import { useThree } from '@react-three/fiber';
+
+const ExportHandler: React.FC = () => {
+  const { gl, scene, camera } = useThree();
+  const setExportFns = useStudioStore((state) => state.setExportFns);
+
+  useEffect(() => {
+    const capture4KPng = async (transparent: boolean): Promise<Blob> => {
+      const width = 3840;
+      const height = 2160;
+      const originalSize = new THREE.Vector2();
+      gl.getSize(originalSize);
+      const originalPixelRatio = gl.getPixelRatio();
+      const originalClearAlpha = gl.getClearAlpha();
+
+      if (transparent) {
+        gl.setClearColor(0x000000, 0);
+      }
+
+      gl.setPixelRatio(1);
+      gl.setSize(width, height, false);
+
+      const oldAspect = (camera as THREE.PerspectiveCamera).aspect;
+      if (camera instanceof THREE.PerspectiveCamera) {
+        (camera as THREE.PerspectiveCamera).aspect = width / height;
+        camera.updateProjectionMatrix();
+      }
+
+      gl.render(scene, camera);
+
+      const canvas = gl.domElement;
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (b) => {
+            if (b) resolve(b);
+            else reject(new Error('Canvas toBlob failed to produce image blob.'));
+          },
+          'image/png',
+          1.0
+        );
+      });
+
+      // Restore
+      gl.setPixelRatio(originalPixelRatio);
+      gl.setSize(originalSize.x, originalSize.y, false);
+      if (transparent) {
+        gl.setClearColor(0x000000, originalClearAlpha);
+      }
+      if (camera instanceof THREE.PerspectiveCamera) {
+        (camera as THREE.PerspectiveCamera).aspect = oldAspect;
+        camera.updateProjectionMatrix();
+      }
+      gl.render(scene, camera);
+
+      return blob;
+    };
+
+    const recordWebm = async (
+      duration: number,
+      fps: number,
+      onProgress: (progress: number) => void
+    ): Promise<Blob> => {
+      const canvas = gl.domElement;
+      if (!canvas.captureStream) {
+        throw new Error('canvas.captureStream() is not supported in this browser.');
+      }
+      const stream = canvas.captureStream(fps);
+
+      let mimeType = 'video/webm; codecs=vp9';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm; codecs=vp8';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        throw new Error('MediaRecorder video/webm recording is not supported in this browser.');
+      }
+
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 16000000 });
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      return new Promise<Blob>((resolve, reject) => {
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          resolve(blob);
+        };
+        recorder.onerror = (err) => {
+          reject(err);
+        };
+
+        recorder.start();
+
+        const startTime = Date.now();
+        const totalMs = duration * 1000;
+
+        const interval = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / totalMs, 1);
+          onProgress(progress);
+
+          if (elapsed >= totalMs) {
+            clearInterval(interval);
+            recorder.stop();
+          }
+        }, 100);
+      });
+    };
+
+    setExportFns(capture4KPng, recordWebm);
+
+    return () => {
+      setExportFns(null, null);
+    };
+  }, [gl, scene, camera, setExportFns]);
+
+  return null;
+};
+
+export interface SceneCanvasRef {
+  getCanvas: () => HTMLCanvasElement | null;
+}
+
+export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    getCanvas: () => canvasRef.current,
+  }));
   const stageLighting = useStudioStore((state: StudioState) => state.stageLighting);
   const ambientIntensity = useStudioStore((state: StudioState) => state.ambientIntensity);
   const ambientColor = useStudioStore((state: StudioState) => state.ambientColor);
@@ -120,12 +255,14 @@ export const SceneCanvas: React.FC = () => {
     <div className="w-full h-full relative select-none">
       <ErrorBoundary componentName="Canvas">
         <Canvas
+          ref={canvasRef}
           camera={{ position: [0, 0, 6], fov: 45 }}
           shadows
-          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
           className="w-full h-full"
         >
           <color attach="background" args={[backgroundColor]} />
+          <ExportHandler />
           
           {/* Lights */}
           <ambientLight intensity={ambientIntensity} color={ambientColor} />
@@ -191,4 +328,4 @@ export const SceneCanvas: React.FC = () => {
       </ErrorBoundary>
     </div>
   );
-};
+});
