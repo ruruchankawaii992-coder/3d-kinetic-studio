@@ -21,6 +21,8 @@ export const Text3DMesh: React.FC = () => {
   const intensity = useStudioStore((state: StudioState) => state.intensity);
   const isPaused = useStudioStore((state: StudioState) => state.isPaused);
   const loop = useStudioStore((state: StudioState) => state.loop);
+  const reducedMotion = useStudioStore((state: StudioState) => state.reducedMotion);
+  const lowPowerMode = useStudioStore((state: StudioState) => state.lowPowerMode);
   
   const currentTime = useStudioStore((state: StudioState) => state.currentTime);
   const setCurrentTime = useStudioStore((state: StudioState) => state.setCurrentTime);
@@ -49,6 +51,21 @@ export const Text3DMesh: React.FC = () => {
 
   useFrame((_state: RootState, delta: number) => {
     if (!meshGroupRef.current) return;
+
+    // Reset parent group transforms
+    meshGroupRef.current.position.set(0, 0, 0);
+    meshGroupRef.current.rotation.set(0, 0, 0);
+    meshGroupRef.current.scale.set(1, 1, 1);
+
+    if (reducedMotion) {
+      charRefs.current.forEach((charMesh, i) => {
+        if (!charMesh) return;
+        charMesh.position.set(charData.positions[i], 0, 0);
+        charMesh.rotation.set(0, 0, 0);
+        charMesh.scale.set(1, 1, 1);
+      });
+      return;
+    }
 
     let t = currentTime;
 
@@ -241,12 +258,12 @@ export const Text3DMesh: React.FC = () => {
               font={fontPath}
               size={1.2}
               height={physics.extrusionDepth}
-              curveSegments={physics.curveSegments}
+              curveSegments={lowPowerMode ? Math.max(3, Math.floor(physics.curveSegments / 2)) : physics.curveSegments}
               bevelEnabled
               bevelThickness={physics.bevelThickness}
               bevelSize={physics.bevelSize}
               bevelOffset={physics.bevelOffset}
-              bevelSegments={physics.bevelSegments}
+              bevelSegments={lowPowerMode ? Math.max(1, Math.floor(physics.bevelSegments / 2)) : physics.bevelSegments}
               castShadow
               receiveShadow
               position={[charData.positions[i], 0, 0]}

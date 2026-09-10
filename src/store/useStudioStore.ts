@@ -92,6 +92,13 @@ export interface StudioState {
   perspectiveMode: PerspectiveMode;
   listItems: ListItem[];
 
+  // Accessibility & Performance Optimizer properties
+  reducedMotion: boolean;
+  pixelRatioCap: number;
+  shadowQuality: 'off' | 'low' | 'medium' | 'high';
+  targetFps: number;
+  lowPowerMode: boolean;
+
   // Timeline properties
   currentTime: number;
   maxTime: number;
@@ -147,6 +154,13 @@ export interface StudioState {
   setPerspectiveMode: (mode: PerspectiveMode) => void;
   addListItem: (item: Omit<ListItem, 'id'>) => void;
   removeListItem: (id: string) => void;
+
+  // Accessibility & Performance setters
+  setReducedMotion: (reducedMotion: boolean) => void;
+  setPixelRatioCap: (pixelRatioCap: number) => void;
+  setShadowQuality: (shadowQuality: 'off' | 'low' | 'medium' | 'high') => void;
+  setTargetFps: (targetFps: number) => void;
+  setLowPowerMode: (lowPowerMode: boolean) => void;
 
   // Timeline setters
   setCurrentTime: (time: number) => void;
@@ -291,6 +305,13 @@ const INITIAL_STATE = {
   shadowRadius: 4,
   castShadows: true,
 
+  // Accessibility & Performance defaults
+  reducedMotion: typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false,
+  pixelRatioCap: 2,
+  shadowQuality: 'high' as const,
+  targetFps: 60,
+  lowPowerMode: false,
+
   // Timeline defaults
   currentTime: 0,
   maxTime: Math.PI * 4, // 12.566s harmonic period (allows 0.5Hz harmonics)
@@ -364,6 +385,13 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
     set((state: StudioState) => ({
       listItems: state.listItems.filter((item: ListItem) => item.id !== id),
     })),
+
+  // Accessibility & Performance setters
+  setReducedMotion: (reducedMotion: boolean) => set({ reducedMotion }),
+  setPixelRatioCap: (pixelRatioCap: number) => set({ pixelRatioCap }),
+  setShadowQuality: (shadowQuality: 'off' | 'low' | 'medium' | 'high') => set({ shadowQuality }),
+  setTargetFps: (targetFps: number) => set({ targetFps }),
+  setLowPowerMode: (lowPowerMode: boolean) => set({ lowPowerMode }),
 
   setCurrentTime: (currentTime: number) => set({ currentTime }),
   setMaxTime: (maxTime: number) => set({ maxTime }),

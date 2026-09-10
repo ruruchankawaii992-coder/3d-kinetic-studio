@@ -250,6 +250,16 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
   const shadowBias = useStudioStore((state: StudioState) => state.shadowBias);
   const shadowRadius = useStudioStore((state: StudioState) => state.shadowRadius);
   const castShadows = useStudioStore((state: StudioState) => state.castShadows);
+  const pixelRatioCap = useStudioStore((state: StudioState) => state.pixelRatioCap);
+  const shadowQuality = useStudioStore((state: StudioState) => state.shadowQuality);
+  const targetFps = useStudioStore((state: StudioState) => state.targetFps);
+  const lowPowerMode = useStudioStore((state: StudioState) => state.lowPowerMode);
+
+  const effectiveCastShadows = shadowQuality === 'off' ? false : castShadows;
+  const effectiveShadowMapSize = 
+    shadowQuality === 'low' ? 512 :
+    shadowQuality === 'medium' ? 1024 :
+    shadowQuality === 'high' ? 2048 : shadowMapSize;
 
   return (
     <div className="w-full h-full relative select-none">
@@ -257,8 +267,15 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
         <Canvas
           ref={canvasRef}
           camera={{ position: [0, 0, 6], fov: 45 }}
-          shadows
-          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
+          shadows={effectiveCastShadows}
+          dpr={[1, pixelRatioCap]}
+          frameloop={targetFps === 30 ? 'demand' : 'always'}
+          gl={{
+            antialias: !lowPowerMode,
+            alpha: true,
+            powerPreference: lowPowerMode ? 'low-power' : 'high-performance',
+            preserveDrawingBuffer: true,
+          }}
           className="w-full h-full"
         >
           <color attach="background" args={[backgroundColor]} />
@@ -270,9 +287,9 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
             position={directionalPosition}
             intensity={directionalIntensity}
             color={directionalColor}
-            castShadow={castShadows}
-            shadow-mapSize-width={shadowMapSize}
-            shadow-mapSize-height={shadowMapSize}
+            castShadow={effectiveCastShadows}
+            shadow-mapSize-width={effectiveShadowMapSize}
+            shadow-mapSize-height={effectiveShadowMapSize}
             shadow-bias={shadowBias}
             shadow-radius={shadowRadius}
             shadow-camera-far={20}

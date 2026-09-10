@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap, Download, Camera, Film } from 'lucide-react';
 import { useStudioStore, MaterialType, AnimationPreset, StageLighting } from '../../store/useStudioStore';
 
-type TabType = 'design' | 'physics' | 'motion' | 'lighting' | 'export';
+type TabType = 'design' | 'physics' | 'motion' | 'lighting' | 'export' | 'performance';
 
 const FONTS = [
   { label: 'Helvetiker Bold', value: '/fonts/helvetiker_bold.typeface.json' },
@@ -106,6 +106,16 @@ export const ControlDrawer: React.FC = () => {
     setShadowRadius,
     castShadows,
     setCastShadows,
+    reducedMotion,
+    setReducedMotion,
+    pixelRatioCap,
+    setPixelRatioCap,
+    shadowQuality,
+    setShadowQuality,
+    targetFps,
+    setTargetFps,
+    lowPowerMode,
+    setLowPowerMode,
 
     capturePngFn,
     recordWebmFn,
@@ -198,6 +208,18 @@ export const ControlDrawer: React.FC = () => {
             aria-label="Open Export tab"
           >
             <Download className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setActiveTab('performance'); setIsOpen(true); }}
+            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+              activeTab === 'performance' && isOpen
+                ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+            }`}
+            title="Performance & Accessibility: Reduced-motion support, low-end smoothness mode, pixel ratio cap, shadow quality, and target FPS throttling"
+            aria-label="Open Performance and Accessibility tab"
+          >
+            <Zap className="w-4 h-4" />
           </button>
         </div>
 
@@ -1366,6 +1388,171 @@ export const ControlDrawer: React.FC = () => {
                     {exportStatus}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* --- Performance & Accessibility Panel --- */}
+            {activeTab === 'performance' && (
+              <div className="space-y-6 animate-fadeIn pb-8">
+                <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                  <Zap className="w-4 h-4" />
+                  <span>Performance & Accessibility Optimizer</span>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Fine-tune rendering performance for lower-end devices, adjust pixel ratios, shadow quality, frame limits, and enable reduced-motion accessibility.
+                </p>
+
+                {/* --- Section 1: Accessibility & Reduced Motion (Criterion 0) --- */}
+                <div className="space-y-4 p-4 bg-slate-950/40 border border-white/10 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-semibold text-cyan-300 uppercase font-mono">Reduced Motion Support</div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        {typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                          ? 'OS Preference: Reduce Motion (Detected)'
+                          : 'OS Preference: Standard Motion'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setReducedMotion(!reducedMotion)}
+                      className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        reducedMotion ? 'bg-cyan-500' : 'bg-slate-800'
+                      }`}
+                      title={reducedMotion ? 'Disable reduced motion mode' : 'Enable reduced motion mode (pauses floating/animated presets)'}
+                      aria-label="Toggle reduced motion mode"
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          reducedMotion ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Automatically pauses floating or animated presets and locks 3D characters in static rest poses for users sensitive to motion.
+                  </p>
+                </div>
+
+                {/* --- Section 2: Low-End Smoothness Mode (Criterion 1) --- */}
+                <div className="space-y-4 p-4 bg-slate-950/40 border border-white/10 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-semibold text-cyan-300 uppercase font-mono">Low-End Smoothness Mode</div>
+                      <div className="text-xs text-slate-400 mt-0.5">Reduce geometry subdivisions</div>
+                    </div>
+                    <button
+                      onClick={() => setLowPowerMode(!lowPowerMode)}
+                      className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        lowPowerMode ? 'bg-cyan-500' : 'bg-slate-800'
+                      }`}
+                      title={lowPowerMode ? 'Disable low-end smoothness mode' : 'Enable low-end smoothness mode (halves curve and bevel subdivisions)'}
+                      aria-label="Toggle low-end smoothness mode"
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          lowPowerMode ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Halves curve and bevel polygon subdivisions and disables heavy post-processing anti-aliasing to deliver butter-smooth frame rates on mobile and budget hardware.
+                  </p>
+                </div>
+
+                {/* --- Section 3: Pixel Ratio & Shadow Quality (Criterion 1) --- */}
+                <div className="space-y-4 p-4 bg-slate-950/40 border border-white/10 rounded-2xl">
+                  <div className="text-xs font-semibold text-cyan-300 uppercase font-mono">Resolution & Shadows</div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300 font-mono">Pixel Ratio Cap</span>
+                      <span className="text-cyan-400 font-mono font-bold">{pixelRatioCap}x</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setPixelRatioCap(1)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-mono transition-all ${
+                          pixelRatioCap === 1
+                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold'
+                            : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                        }`}
+                        title="Cap pixel ratio at 1x for maximum speed on mobile displays"
+                        aria-label="Set pixel ratio cap to 1x"
+                      >
+                        1x (Fast)
+                      </button>
+                      <button
+                        onClick={() => setPixelRatioCap(2)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-mono transition-all ${
+                          pixelRatioCap === 2
+                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold'
+                            : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                        }`}
+                        title="Allow up to 2x pixel ratio for sharp Retina/HiDPI displays"
+                        aria-label="Set pixel ratio cap to 2x"
+                      >
+                        2x (Retina)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300 font-mono">Shadow Quality</span>
+                      <span className="text-cyan-400 font-mono font-bold uppercase">{shadowQuality}</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {(['off', 'low', 'medium', 'high'] as const).map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => setShadowQuality(q)}
+                          className={`py-2 px-2 rounded-xl border text-xs font-mono uppercase transition-all ${
+                            shadowQuality === q
+                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold'
+                              : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                          }`}
+                          title={`Set shadow quality to ${q}`}
+                          aria-label={`Set shadow quality to ${q}`}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* --- Section 4: Target FPS Throttling (Criterion 1) --- */}
+                <div className="space-y-4 p-4 bg-slate-950/40 border border-white/10 rounded-2xl">
+                  <div className="text-xs font-semibold text-cyan-300 uppercase font-mono">Target FPS Throttling</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setTargetFps(30)}
+                      className={`py-2.5 px-3 rounded-xl border text-xs font-mono transition-all ${
+                        targetFps === 30
+                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold'
+                          : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                      title="Throttle render loop to 30 FPS to conserve battery power on laptops and mobile devices"
+                      aria-label="Set target FPS to 30"
+                    >
+                      30 FPS (Power Saver)
+                    </button>
+                    <button
+                      onClick={() => setTargetFps(60)}
+                      className={`py-2.5 px-3 rounded-xl border text-xs font-mono transition-all ${
+                        targetFps === 60
+                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold'
+                          : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                      title="Run at full 60 FPS for maximum fluidity and responsiveness"
+                      aria-label="Set target FPS to 60"
+                    >
+                      60 FPS (Full Fluidity)
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
