@@ -90,7 +90,9 @@ export interface StudioState {
   directionalPosition: [number, number, number];
 
   cameraMode: CameraMode;
+  perspectiveMode: PerspectiveMode;
   tunnelZoomSpeed: number;
+  listItems: ListItem[];
   shadowMapSize: number;
   shadowBias: number;
   shadowRadius: number;
@@ -126,6 +128,7 @@ export interface StudioState {
   setWireframeMode: (wireframeMode: boolean) => void;
   setWireframeColor: (wireframeColor: string) => void;
   setGlowHalos: (glowHalos: boolean) => void;
+  setPerspectiveMode: (mode: PerspectiveMode) => void;
   setBloomIntensity: (bloomIntensity: number) => void;
   setBloomThreshold: (bloomThreshold: number) => void;
   setBloomRadius: (bloomRadius: number) => void;
@@ -298,6 +301,7 @@ const INITIAL_STATE = {
   showGrid: true,
   cameraResetTrigger: 0,
   cameraMode: 'Orbit' as CameraMode,
+  perspectiveMode: 'Normal' as PerspectiveMode,
   tunnelZoomSpeed: 1.0,
   listItems: DEFAULT_ITEMS,
 
@@ -396,6 +400,7 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
   setCastShadows: (castShadows: boolean) => set({ castShadows }),
 
   setCameraMode: (cameraMode: CameraMode) => set({ cameraMode }),
+  setPerspectiveMode: (perspectiveMode: PerspectiveMode) => set({ perspectiveMode }),
   setTunnelZoomSpeed: (tunnelZoomSpeed: number) => set({ tunnelZoomSpeed }),
   addListItem: (item: Omit<ListItem, 'id'>) =>
     set((state: StudioState) => ({
