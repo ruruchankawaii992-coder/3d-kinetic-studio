@@ -38,14 +38,56 @@ const CameraController: React.FC = () => {
   const cameraResetTrigger = useStudioStore((state: StudioState) => state.cameraResetTrigger);
   const cameraMode = useStudioStore((state: StudioState) => state.cameraMode);
   const tunnelZoomSpeed = useStudioStore((state: StudioState) => state.tunnelZoomSpeed);
+  const text = useStudioStore((state: StudioState) => state.text);
 
-  useFrame((state) => {
+  // Maintain smooth interpolation target and lookAt vector across frames
+  const targetCamPos = useRef(new THREE.Vector3(0, 0, 8));
+  const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
+  const currentCamPos = useRef(new THREE.Vector3(0, 0, 8));
+  const currentLookAt = useRef(new THREE.Vector3(0, 0, 0));
+
+  useFrame((state, delta) => {
     if (cameraMode === 'TunnelZoom') {
-      const t = state.clock.getElapsedTime() * tunnelZoomSpeed;
-      // Simple oscillating zoom through the center
-      const z = 4 + Math.sin(t) * 2;
-      state.camera.position.set(0, 0, z);
-      state.camera.lookAt(0, 0, 0);
+      const time = state.clock.getElapsedTime() * tunnelZoomSpeed * 0.4;
+      
+      // Calculate dynamic waypoints through glyph holes or spatial characters ('O', 'A', 'P', 'R', 'B', 'D', 'Q', '0-9')
+      // Let's create a smooth 3D spline or multi-stage path that passes through letter positions and holes.
+      const charCount = Math.max(1, text.length);
+      const spanWidth = charCount * 0.8;
+      
+      // We cycle through characters and swoop in/out of specific glyph centers or loops
+      const progress = (time * 0.5) % charCount;
+      const charIndex = Math.floor(progress);
+      const subProgress = progress - charIndex; // 0 to 1 between chars
+      
+      // Approximate center X for each character in the text string
+      const startX = -spanWidth / 2;
+      const charSpacing = spanWidth / charCount;
+      const currCharX = startX + charIndex * charSpacing + charSpacing / 2;
+      const nextCharX = startX + ((charIndex + 1) % charCount) * charSpacing + charSpacing / 2;
+      
+      // Interpolate X position between current and next character
+      const posX = THREE.MathUtils.lerp(currCharX, nextCharX, subProgress);
+      
+      // Create a zooming spiral/loop through the character hole (Z axis dives forward into negative depth and loops back)
+      // When subProgress is around 0.5, camera dives deep into the glyph (Z goes from 6 -> 1.5 -> 6) and orbits slightly
+      const diveFactor = Math.sin(subProgress * Math.PI * 2); // Goes negative/positive smoothly
+      const posZ = 5 + Math.sin(time * 2) * 2.5 - diveFactor * 1.5; // Smooth breathing depth through glyph loops
+      const posY = Math.cos(time * 1.5) * 1.2; // Gentle floating vertical arc
+      
+      targetCamPos.current.set(posX + Math.sin(time) * 1.5, posY, posZ);
+      targetLookAt.current.set(posX, 0, 0);
+
+      // Smooth lerp (dampening) for butter-smooth camera movement without jarring snaps
+      const lerpFactor = Math.min(1, delta * 4);
+      currentCamPos.current.lerp(targetCamPos.current, lerpFactor);
+      currentLookAt.current.lerp(targetLookAt.current, lerpFactor);
+
+      state.camera.position.copy(currentCamPos.current);
+      state.camera.lookAt(currentLookAt.current);
+    } else {
+      // When switching back to Orbit mode, sync current vectors so orbit controls don't jump
+      currentCamPos.current.copy(state.camera.position);
     }
   });
 
