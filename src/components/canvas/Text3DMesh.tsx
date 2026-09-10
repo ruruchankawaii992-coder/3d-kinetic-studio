@@ -6,6 +6,8 @@ import { useStudioStore, StudioState } from '../../store/useStudioStore';
 
 export const Text3DMesh: React.FC = () => {
   const meshGroupRef = useRef<THREE.Group>(null);
+  const charRefs = useRef<THREE.Mesh[]>([]);
+  const accumulatedTimeRef = useRef<number>(0);
   
   const text = useStudioStore((state: StudioState) => state.text);
   const fontPath = useStudioStore((state: StudioState) => state.font);
@@ -39,71 +41,93 @@ export const Text3DMesh: React.FC = () => {
     return { chars, positions };
   }, [text, fontData, physics.letterSpacing]);
 
-  useFrame((state: RootState, delta: number) => {
-    if (!meshGroupRef.current || isPaused) return;
+  useFrame((_state: RootState, delta: number) => {
+    if (!meshGroupRef.current) return;
 
-    const t = state.clock.getElapsedTime() * speed;
+    if (!isPaused) {
+      accumulatedTimeRef.current += delta * speed;
+    }
+
+    const t = accumulatedTimeRef.current;
     const factor = intensity / 50;
 
-    switch (animationPreset) {
-      case 'The Float':
-        meshGroupRef.current.position.y = Math.sin(t * 1.5) * 0.25 * factor;
-        meshGroupRef.current.rotation.x = Math.sin(t * 0.8) * 0.08 * factor;
-        meshGroupRef.current.rotation.z = Math.cos(t * 1.0) * 0.05 * factor;
-        meshGroupRef.current.rotation.y = 0;
-        meshGroupRef.current.scale.set(1, 1, 1);
-        break;
+    // Reset parent group transforms for per-character animations
+    meshGroupRef.current.position.set(0, 0, 0);
+    meshGroupRef.current.rotation.set(0, 0, 0);
+    meshGroupRef.current.scale.set(1, 1, 1);
 
-      case 'The Vortex':
-        meshGroupRef.current.rotation.y += delta * 1.8 * speed;
-        meshGroupRef.current.rotation.x = Math.sin(t) * 0.2 * factor;
-        meshGroupRef.current.position.y = Math.cos(t * 2) * 0.15 * factor;
-        meshGroupRef.current.scale.setScalar(1 + Math.sin(t * 3) * 0.08 * factor);
-        break;
+    charRefs.current.forEach((charMesh, i) => {
+      if (!charMesh) return;
 
-      case 'The Glitch': {
-        const glitchTrigger = Math.sin(t * 8) > 0.85;
-        if (glitchTrigger) {
-          meshGroupRef.current.position.x = (Math.random() - 0.5) * 0.3 * factor;
-          meshGroupRef.current.position.y = (Math.random() - 0.5) * 0.3 * factor;
-          meshGroupRef.current.rotation.z = (Math.random() - 0.5) * 0.2 * factor;
-        } else {
-          meshGroupRef.current.position.x = THREE.MathUtils.lerp(meshGroupRef.current.position.x, 0, 0.2);
-          meshGroupRef.current.position.y = THREE.MathUtils.lerp(meshGroupRef.current.position.y, 0, 0.2);
-          meshGroupRef.current.rotation.z = THREE.MathUtils.lerp(meshGroupRef.current.rotation.z, 0, 0.2);
+      charMesh.position.set(charData.positions[i], 0, 0); // Reset to initial position
+      charMesh.rotation.set(0, 0, 0);
+      charMesh.scale.set(1, 1, 1);
+
+      switch (animationPreset) {
+        case 'The Float':
+          charMesh.position.y = Math.sin(t * 1.5 + i * 0.3) * 0.25 * factor;
+          charMesh.rotation.x = Math.sin(t * 0.8 + i * 0.2) * 0.08 * factor;
+          charMesh.rotation.z = Math.cos(t * 1.0 + i * 0.1) * 0.05 * factor;
+          break;
+
+        case 'The Vortex':
+          const vortexAngle = t * 2 + i * 0.4;
+          const vortexRadius = 0.5 + Math.sin(t * 0.5 + i * 0.1) * 0.2;
+          charMesh.position.x = charData.positions[i] + Math.cos(vortexAngle) * vortexRadius * factor;
+          charMesh.position.y = Math.sin(vortexAngle) * vortexRadius * factor;
+          charMesh.rotation.y = vortexAngle;
+          charMesh.rotation.z = Math.sin(t * 1.5 + i * 0.3) * 0.5 * factor;
+          charMesh.scale.setScalar(1 + Math.sin(t * 3 + i * 0.2) * 0.08 * factor);
+          break;
+
+        case 'The Glitch': {
+          const glitchTrigger = Math.sin(t * 12 + i * 0.5) > 0.9;
+          if (glitchTrigger) {
+            charMesh.position.x += (Math.random() - 0.5) * 0.6 * factor;
+            charMesh.position.y += (Math.random() - 0.5) * 0.6 * factor;
+            charMesh.rotation.z += (Math.random() - 0.5) * 0.8 * factor;
+            charMesh.scale.setScalar(1 + (Math.random() - 0.5) * 0.3 * factor);
+          } else {
+            charMesh.position.x = THREE.MathUtils.lerp(charMesh.position.x, charData.positions[i], 0.2);
+            charMesh.position.y = THREE.MathUtils.lerp(charMesh.position.y, 0, 0.2);
+            charMesh.rotation.z = THREE.MathUtils.lerp(charMesh.rotation.z, 0, 0.2);
+            charMesh.scale.setScalar(THREE.MathUtils.lerp(charMesh.scale.x, 1, 0.2));
+          }
+          break;
         }
-        break;
+
+        case 'The Wave':
+          charMesh.position.y = Math.sin(t * 2.5 + i * 0.4) * 0.4 * factor;
+          charMesh.position.z = Math.cos(t * 1.8 + i * 0.3) * 0.3 * factor;
+          charMesh.rotation.x = Math.sin(t * 1.5 + i * 0.2) * 0.3 * factor;
+          charMesh.rotation.y = Math.cos(t * 1.2 + i * 0.1) * 0.2 * factor;
+          break;
+
+        case 'The Assemble': {
+          const assembleProgress = THREE.MathUtils.clamp(Math.sin(t * 0.6 - i * 0.15), -0.5, 1);
+          const startOffset = 5 * (1 - assembleProgress);
+          charMesh.position.x = charData.positions[i] + (Math.random() - 0.5) * startOffset * factor;
+          charMesh.position.y = (Math.random() - 0.5) * startOffset * factor;
+          charMesh.position.z = (Math.random() - 0.5) * startOffset * factor;
+          charMesh.rotation.x = (1 - assembleProgress) * Math.PI * 2 * factor;
+          charMesh.rotation.y = (1 - assembleProgress) * Math.PI * 2 * factor;
+          charMesh.scale.setScalar(assembleProgress * factor);
+          break;
+        }
+
+        case 'The Pulsar': {
+          const pulse = 1 + Math.sin(t * 4 + i * 0.3) * 0.2 * factor;
+          charMesh.scale.set(pulse, pulse, pulse);
+          charMesh.rotation.y = Math.sin(t * 0.5 + i * 0.1) * 0.15 * factor;
+          break;
+        }
+
+        case 'None':
+        default:
+          // Already reset at the beginning of the loop
+          break;
       }
-
-      case 'The Wave':
-        meshGroupRef.current.position.y = Math.sin(t * 2.5) * 0.35 * factor;
-        meshGroupRef.current.position.x = Math.cos(t * 1.8) * 0.2 * factor;
-        meshGroupRef.current.rotation.y = Math.sin(t * 1.2) * 0.25 * factor;
-        meshGroupRef.current.rotation.x = Math.cos(t * 1.5) * 0.15 * factor;
-        break;
-
-      case 'The Assemble': {
-        const cycle = (t * 0.6) % (Math.PI * 2);
-        const assembleScale = THREE.MathUtils.clamp(Math.sin(cycle) * 1.5, 0.2, 1.0);
-        meshGroupRef.current.scale.set(assembleScale, assembleScale, assembleScale);
-        meshGroupRef.current.rotation.y = (1 - assembleScale) * Math.PI * 2 * factor;
-        break;
-      }
-
-      case 'The Pulsar': {
-        const pulse = 1 + Math.sin(t * 4) * 0.18 * factor;
-        meshGroupRef.current.scale.set(pulse, pulse, pulse);
-        meshGroupRef.current.rotation.y = Math.sin(t * 0.5) * 0.1;
-        break;
-      }
-
-      case 'None':
-      default:
-        meshGroupRef.current.position.set(0, 0, 0);
-        meshGroupRef.current.rotation.set(0, 0, 0);
-        meshGroupRef.current.scale.set(1, 1, 1);
-        break;
-    }
+    });
   });
 
   const renderMaterial = () => {
@@ -166,6 +190,7 @@ export const Text3DMesh: React.FC = () => {
           {charData.chars.map((char, i) => (
             <Text3D
               key={`${i}-${char}`}
+              ref={(el) => { if (el) charRefs.current[i] = el; }}
               font={fontPath}
               size={1.2}
               height={physics.extrusionDepth}

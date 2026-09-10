@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, Grid, Html } from '@react-three/drei';
+import { OrbitControls, Environment, Html } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { Text3DMesh } from './Text3DMesh';
 import { useStudioStore, StudioState } from '../../store/useStudioStore';
@@ -63,7 +63,6 @@ const LoadingFallback: React.FC = () => (
 );
 
 export const SceneCanvas: React.FC = () => {
-  const showGrid = useStudioStore((state: StudioState) => state.showGrid);
   const stageLighting = useStudioStore((state: StudioState) => state.stageLighting);
   const ambientIntensity = useStudioStore((state: StudioState) => state.ambientIntensity);
   const directionalIntensity = useStudioStore((state: StudioState) => state.directionalIntensity);
@@ -112,22 +111,6 @@ export const SceneCanvas: React.FC = () => {
 
           {/* Controls */}
           <CameraController />
-
-          {/* Grid helper */}
-          {showGrid && (
-            <Grid
-              position={[0, -1.8, 0]}
-              args={[20, 20]}
-              cellSize={0.6}
-              cellThickness={1}
-              cellColor="#1E293B"
-              sectionSize={3}
-              sectionThickness={1.5}
-              sectionColor="#00F0FF"
-              fadeDistance={25}
-              fadeStrength={1.2}
-            />
-          )}
 
           {/* 3D Geometry */}
           <CanvasErrorBoundary
