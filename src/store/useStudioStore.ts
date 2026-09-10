@@ -92,6 +92,11 @@ export interface StudioState {
   perspectiveMode: PerspectiveMode;
   listItems: ListItem[];
 
+  // Timeline properties
+  currentTime: number;
+  maxTime: number;
+  isScrubbing: boolean;
+
   // Setters
   setText: (text: string) => void;
   setFont: (font: string) => void;
@@ -135,6 +140,12 @@ export interface StudioState {
   setPerspectiveMode: (mode: PerspectiveMode) => void;
   addListItem: (item: Omit<ListItem, 'id'>) => void;
   removeListItem: (id: string) => void;
+
+  // Timeline setters
+  setCurrentTime: (time: number) => void;
+  setMaxTime: (maxTime: number) => void;
+  setIsScrubbing: (isScrubbing: boolean) => void;
+
   resetAll: () => void;
 }
 
@@ -265,6 +276,11 @@ const INITIAL_STATE = {
   shadowBias: -0.001,
   shadowRadius: 4,
   castShadows: true,
+
+  // Timeline defaults
+  currentTime: 0,
+  maxTime: Math.PI * 4, // 12.566s harmonic period (allows 0.5Hz harmonics)
+  isScrubbing: false,
 };
 
 const storeCreator: StateCreator<StudioState> = (set) => ({
@@ -327,6 +343,11 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
     set((state: StudioState) => ({
       listItems: state.listItems.filter((item: ListItem) => item.id !== id),
     })),
+
+  setCurrentTime: (currentTime: number) => set({ currentTime }),
+  setMaxTime: (maxTime: number) => set({ maxTime }),
+  setIsScrubbing: (isScrubbing: boolean) => set({ isScrubbing }),
+
   resetAll: () => set({ ...INITIAL_STATE }),
 });
 

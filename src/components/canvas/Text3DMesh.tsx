@@ -7,7 +7,6 @@ import { useStudioStore, StudioState } from '../../store/useStudioStore';
 export const Text3DMesh: React.FC = () => {
   const meshGroupRef = useRef<THREE.Group>(null);
   const charRefs = useRef<THREE.Mesh[]>([]);
-  const accumulatedTimeRef = useRef<number>(0);
   
   const text = useStudioStore((state: StudioState) => state.text);
   const fontPath = useStudioStore((state: StudioState) => state.font);
@@ -21,6 +20,12 @@ export const Text3DMesh: React.FC = () => {
   const speed = useStudioStore((state: StudioState) => state.speed);
   const intensity = useStudioStore((state: StudioState) => state.intensity);
   const isPaused = useStudioStore((state: StudioState) => state.isPaused);
+  const loop = useStudioStore((state: StudioState) => state.loop);
+  
+  const currentTime = useStudioStore((state: StudioState) => state.currentTime);
+  const setCurrentTime = useStudioStore((state: StudioState) => state.setCurrentTime);
+  const maxTime = useStudioStore((state: StudioState) => state.maxTime);
+  const isScrubbing = useStudioStore((state: StudioState) => state.isScrubbing);
 
   const fontData = useFont(fontPath);
 
@@ -45,11 +50,21 @@ export const Text3DMesh: React.FC = () => {
   useFrame((_state: RootState, delta: number) => {
     if (!meshGroupRef.current) return;
 
-    if (!isPaused) {
-      accumulatedTimeRef.current += delta * speed;
+    let t = currentTime;
+
+    if (!isPaused && !isScrubbing) {
+      t += delta * speed;
+      
+      // Looping logic
+      if (loop) {
+        t = t % maxTime;
+      } else if (t > maxTime) {
+        t = maxTime;
+      }
+      
+      setCurrentTime(t);
     }
 
-    const t = accumulatedTimeRef.current;
     const factor = intensity / 50;
 
     // Reset parent group transforms for per-character animations
@@ -67,7 +82,7 @@ export const Text3DMesh: React.FC = () => {
       switch (animationPreset) {
         case 'The Float':
           charMesh.position.y = Math.sin(t * 1.5 + i * 0.3) * 0.25 * factor;
-          charMesh.rotation.x = Math.sin(t * 0.8 + i * 0.2) * 0.08 * factor;
+          charMesh.rotation.x = Math.sin(t * 1.0 + i * 0.2) * 0.08 * factor;
           charMesh.rotation.z = Math.cos(t * 1.0 + i * 0.1) * 0.05 * factor;
           break;
 
@@ -78,7 +93,7 @@ export const Text3DMesh: React.FC = () => {
           charMesh.position.y = Math.sin(vortexAngle) * vortexRadius * factor;
           charMesh.rotation.y = vortexAngle;
           charMesh.rotation.z = Math.sin(t * 1.5 + i * 0.3) * 0.5 * factor;
-          charMesh.scale.setScalar(1 + Math.sin(t * 3 + i * 0.2) * 0.08 * factor);
+          charMesh.scale.setScalar(1 + Math.sin(t * 3.0 + i * 0.2) * 0.08 * factor);
           break;
 
         case 'The Glitch': {
@@ -99,13 +114,13 @@ export const Text3DMesh: React.FC = () => {
 
         case 'The Wave':
           charMesh.position.y = Math.sin(t * 2.5 + i * 0.4) * 0.4 * factor;
-          charMesh.position.z = Math.cos(t * 1.8 + i * 0.3) * 0.3 * factor;
+          charMesh.position.z = Math.cos(t * 2.0 + i * 0.3) * 0.3 * factor;
           charMesh.rotation.x = Math.sin(t * 1.5 + i * 0.2) * 0.3 * factor;
-          charMesh.rotation.y = Math.cos(t * 1.2 + i * 0.1) * 0.2 * factor;
+          charMesh.rotation.y = Math.cos(t * 1.0 + i * 0.1) * 0.2 * factor;
           break;
 
         case 'The Assemble': {
-          const assembleProgress = THREE.MathUtils.clamp(Math.sin(t * 0.6 - i * 0.15), -0.5, 1);
+          const assembleProgress = THREE.MathUtils.clamp(Math.sin(t * 0.5 - i * 0.15), -0.5, 1);
           const startOffset = 5 * (1 - assembleProgress);
           charMesh.position.x = charData.positions[i] + (Math.random() - 0.5) * startOffset * factor;
           charMesh.position.y = (Math.random() - 0.5) * startOffset * factor;
@@ -117,7 +132,7 @@ export const Text3DMesh: React.FC = () => {
         }
 
         case 'The Pulsar': {
-          const pulse = 1 + Math.sin(t * 4 + i * 0.3) * 0.2 * factor;
+          const pulse = 1 + Math.sin(t * 4.0 + i * 0.3) * 0.2 * factor;
           charMesh.scale.set(pulse, pulse, pulse);
           charMesh.rotation.y = Math.sin(t * 0.5 + i * 0.1) * 0.15 * factor;
           break;
