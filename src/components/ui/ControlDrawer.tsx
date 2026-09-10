@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette } from 'lucide-react';
+import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap } from 'lucide-react';
 import { useStudioStore, MaterialType, AnimationPreset, StageLighting } from '../../store/useStudioStore';
 
 type TabType = 'design' | 'physics' | 'motion' | 'lighting';
@@ -72,6 +72,40 @@ export const ControlDrawer: React.FC = () => {
     setDirectionalIntensity,
     showGrid,
     setShowGrid,
+
+    environmentIntensity,
+    setEnvironmentIntensity,
+    environmentRotation,
+    setEnvironmentRotation,
+    backgroundColor,
+    setBackgroundColor,
+
+    orbitingLightEnabled,
+    setOrbitingLightEnabled,
+    orbitingLightSpeed,
+    setOrbitingLightSpeed,
+    orbitingLightColor,
+    setOrbitingLightColor,
+    orbitingLightIntensity,
+    setOrbitingLightIntensity,
+    orbitingLightRadius,
+    setOrbitingLightRadius,
+
+    ambientColor,
+    setAmbientColor,
+    directionalColor,
+    setDirectionalColor,
+    directionalPosition,
+    setDirectionalPosition,
+
+    shadowMapSize,
+    setShadowMapSize,
+    shadowBias,
+    setShadowBias,
+    shadowRadius,
+    setShadowRadius,
+    castShadows,
+    setCastShadows,
   } = useStudioStore();
 
   return (
@@ -841,108 +875,293 @@ export const ControlDrawer: React.FC = () => {
             )}
 
             {activeTab === 'lighting' && (
-              <div className="space-y-5 animate-fadeIn">
-                <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
-                  <Sun className="w-4 h-4" />
-                  <span>Stage & Environment</span>
-                </div>
+              <div className="space-y-6 animate-fadeIn pb-8">
+                {/* --- Section: Environment & Stage --- */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                    <Sun className="w-4 h-4" />
+                    <span>Environment & Stage</span>
+                  </div>
 
-                {/* Stage Lighting Preset */}
-                <div className="space-y-1.5">
-                  <label 
-                    className="text-xs font-mono text-slate-400 uppercase"
-                    title="Choose HDRI environment lighting map for ambient stage reflections."
-                  >
-                    HDRI Environment
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {LIGHTING_PRESETS.map((lp) => (
-                      <button
-                        key={lp}
-                        onClick={() => setStageLighting(lp)}
-                        className={`p-2.5 text-xs capitalize rounded-xl border text-left transition-all ${
-                          stageLighting === lp
-                            ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-medium shadow-sm'
-                            : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'
-                        }`}
-                        title={`Select ${lp} HDRI lighting environment`}
-                        aria-label={`Select ${lp} environment preset`}
-                      >
-                        {lp}
-                      </button>
-                    ))}
+                  {/* Stage Lighting Preset */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-mono text-slate-400 uppercase">HDRI Preset</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {LIGHTING_PRESETS.map((lp) => (
+                        <button
+                          key={lp}
+                          onClick={() => setStageLighting(lp)}
+                          className={`p-2 text-[10px] capitalize rounded-lg border transition-all ${
+                            stageLighting === lp
+                              ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                              : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-white/5'
+                          }`}
+                        >
+                          {lp}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                        <span>Env Intensity</span>
+                        <span>{environmentIntensity.toFixed(1)}</span>
+                      </div>
+                      <input
+                        type="range" min="0" max="5" step="0.1"
+                        value={environmentIntensity}
+                        onChange={(e) => setEnvironmentIntensity(parseFloat(e.target.value))}
+                        className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                        <span>Env Rotation</span>
+                        <span>{environmentRotation}°</span>
+                      </div>
+                      <input
+                        type="range" min="0" max="360" step="1"
+                        value={environmentRotation}
+                        onChange={(e) => setEnvironmentRotation(parseInt(e.target.value))}
+                        className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-mono text-slate-400 uppercase">Background Color</label>
+                    <div className="flex items-center gap-2 p-2 bg-slate-900/80 border border-white/10 rounded-xl">
+                      <input
+                        type="color" value={backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-8 h-8 rounded border-0 cursor-pointer bg-transparent"
+                      />
+                      <span className="text-xs font-mono text-slate-300 uppercase">{backgroundColor}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Ambient Light Intensity */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span 
-                      className="text-slate-400 uppercase"
-                      title="Adjust overall uniform background ambient light level."
+                {/* --- Section: Global & Key Lights --- */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                    <Sun className="w-4 h-4 opacity-70" />
+                    <span>Global & Key Lights</span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                          <span>Ambient</span>
+                          <span>{ambientIntensity.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range" min="0" max="2" step="0.05"
+                          value={ambientIntensity}
+                          onChange={(e) => setAmbientIntensity(parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                        />
+                        <input
+                          type="color" value={ambientColor}
+                          onChange={(e) => setAmbientColor(e.target.value)}
+                          className="w-full h-6 rounded-md border-0 cursor-pointer bg-slate-900"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                          <span>Directional</span>
+                          <span>{directionalIntensity.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range" min="0" max="5" step="0.1"
+                          value={directionalIntensity}
+                          onChange={(e) => setDirectionalIntensity(parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                        />
+                        <input
+                          type="color" value={directionalColor}
+                          onChange={(e) => setDirectionalColor(e.target.value)}
+                          className="w-full h-6 rounded-md border-0 cursor-pointer bg-slate-900"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-mono text-slate-500 uppercase">Directional Position</label>
+                      <div className="space-y-1.5">
+                        {['X', 'Y', 'Z'].map((axis, i) => (
+                          <div key={axis} className="flex items-center gap-3">
+                            <span className="text-[10px] font-mono text-slate-400 w-3">{axis}</span>
+                            <input
+                              type="range" min="-15" max="15" step="0.5"
+                              value={directionalPosition[i]}
+                              onChange={(e) => {
+                                const newPos = [...directionalPosition] as [number, number, number];
+                                newPos[i] = parseFloat(e.target.value);
+                                setDirectionalPosition(newPos);
+                              }}
+                              className="flex-1 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-slate-500"
+                            />
+                            <span className="text-[10px] font-mono text-slate-400 w-8 text-right">{directionalPosition[i]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* --- Section: Orbiting Dynamic Light --- */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                    <div className="flex items-center gap-2 font-semibold text-cyan-400">
+                      <Zap className="w-4 h-4" />
+                      <span>Orbiting Light</span>
+                    </div>
+                    <button
+                      onClick={() => setOrbitingLightEnabled(!orbitingLightEnabled)}
+                      className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${
+                        orbitingLightEnabled ? 'bg-cyan-500' : 'bg-slate-800'
+                      }`}
                     >
-                      Ambient Intensity
-                    </span>
-                    <span className="text-cyan-400">{ambientIntensity.toFixed(2)}</span>
+                      <div className={`bg-white w-3 h-3 rounded-full transform transition-transform ${orbitingLightEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
                   </div>
-                  <input
-                    type="range"
-                    min="0.0"
-                    max="2.0"
-                    step="0.05"
-                    value={ambientIntensity}
-                    onChange={(e) => setAmbientIntensity(parseFloat(e.target.value))}
-                    className="w-full accent-cyan-400 cursor-pointer"
-                    title="Slide to adjust background ambient light level"
-                    aria-label="Ambient Intensity slider"
-                  />
+
+                  {orbitingLightEnabled && (
+                    <div className="space-y-4 animate-fadeIn">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-mono text-slate-400 uppercase">Color</label>
+                          <input
+                            type="color" value={orbitingLightColor}
+                            onChange={(e) => setOrbitingLightColor(e.target.value)}
+                            className="w-full h-8 rounded-lg border-0 cursor-pointer bg-slate-900"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                            <span>Intensity</span>
+                            <span>{orbitingLightIntensity.toFixed(1)}</span>
+                          </div>
+                          <input
+                            type="range" min="0" max="10" step="0.1"
+                            value={orbitingLightIntensity}
+                            onChange={(e) => setOrbitingLightIntensity(parseFloat(e.target.value))}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                            <span>Speed</span>
+                            <span>{orbitingLightSpeed.toFixed(1)}</span>
+                          </div>
+                          <input
+                            type="range" min="0" max="5" step="0.1"
+                            value={orbitingLightSpeed}
+                            onChange={(e) => setOrbitingLightSpeed(parseFloat(e.target.value))}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                            <span>Radius</span>
+                            <span>{orbitingLightRadius.toFixed(1)}</span>
+                          </div>
+                          <input
+                            type="range" min="1" max="15" step="0.1"
+                            value={orbitingLightRadius}
+                            onChange={(e) => setOrbitingLightRadius(parseFloat(e.target.value))}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Directional Light Intensity */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span 
-                      className="text-slate-400 uppercase"
-                      title="Adjust key spotlight intensity and cast shadow contrast."
+                {/* --- Section: Advanced Shadows --- */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                    <div className="flex items-center gap-2 font-semibold text-cyan-400">
+                      <Sun className="w-4 h-4 opacity-50" />
+                      <span>Shadow Map FX</span>
+                    </div>
+                    <button
+                      onClick={() => setCastShadows(!castShadows)}
+                      className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${
+                        castShadows ? 'bg-cyan-500' : 'bg-slate-800'
+                      }`}
                     >
-                      Directional Intensity
-                    </span>
-                    <span className="text-cyan-400">{directionalIntensity.toFixed(2)}</span>
+                      <div className={`bg-white w-3 h-3 rounded-full transform transition-transform ${castShadows ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
                   </div>
-                  <input
-                    type="range"
-                    min="0.0"
-                    max="3.0"
-                    step="0.1"
-                    value={directionalIntensity}
-                    onChange={(e) => setDirectionalIntensity(parseFloat(e.target.value))}
-                    className="w-full accent-cyan-400 cursor-pointer"
-                    title="Slide to adjust key spotlight and shadow contrast intensity"
-                    aria-label="Directional Intensity slider"
-                  />
+
+                  {castShadows && (
+                    <div className="space-y-4 animate-fadeIn">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-mono text-slate-400 uppercase">Map Resolution</label>
+                        <div className="grid grid-cols-4 gap-1">
+                          {[512, 1024, 2048, 4096].map((size) => (
+                            <button
+                              key={size}
+                              onClick={() => setShadowMapSize(size)}
+                              className={`py-1 text-[9px] font-mono rounded-md border transition-all ${
+                                shadowMapSize === size
+                                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                                  : 'bg-slate-900 border-white/10 text-slate-500'
+                              }`}
+                            >
+                              {size}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                            <span>Bias</span>
+                            <span>{shadowBias.toFixed(4)}</span>
+                          </div>
+                          <input
+                            type="range" min="-0.01" max="0.01" step="0.0005"
+                            value={shadowBias}
+                            onChange={(e) => setShadowBias(parseFloat(e.target.value))}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-slate-400"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                            <span>Radius</span>
+                            <span>{shadowRadius}</span>
+                          </div>
+                          <input
+                            type="range" min="0" max="10" step="1"
+                            value={shadowRadius}
+                            onChange={(e) => setShadowRadius(parseInt(e.target.value))}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-slate-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Grid Toggle */}
-                <div className="flex items-center justify-between pt-2">
-                  <span 
-                    className="text-xs font-mono text-slate-400 uppercase"
-                    title="Toggle ground floor reference coordinate grid."
-                  >
-                    Show Floor Grid
-                  </span>
+                <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                  <span className="text-xs font-mono text-slate-400 uppercase">Floor Grid</span>
                   <button
                     onClick={() => setShowGrid(!showGrid)}
                     className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
                       showGrid ? 'bg-cyan-500' : 'bg-slate-800'
                     }`}
-                    title={showGrid ? 'Hide ground floor reference grid' : 'Show ground floor reference grid'}
-                    aria-label="Toggle ground floor grid"
                   >
-                    <div
-                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                        showGrid ? 'translate-x-6' : 'translate-x-0'
-                      }`}
-                    />
+                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${showGrid ? 'translate-x-6' : 'translate-x-0'}`} />
                   </button>
                 </div>
               </div>

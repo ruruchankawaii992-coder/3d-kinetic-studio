@@ -1,7 +1,8 @@
 import React, { Suspense, useEffect, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Html } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import * as THREE from 'three';
 import { Text3DMesh } from './Text3DMesh';
 import { useStudioStore, StudioState } from '../../store/useStudioStore';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
@@ -62,10 +63,58 @@ const LoadingFallback: React.FC = () => (
   </Html>
 );
 
+const OrbitingLight: React.FC = () => {
+  const lightRef = useRef<THREE.PointLight>(null);
+
+  const orbitingLightEnabled = useStudioStore((state: StudioState) => state.orbitingLightEnabled);
+  const orbitingLightSpeed = useStudioStore((state: StudioState) => state.orbitingLightSpeed);
+  const orbitingLightColor = useStudioStore((state: StudioState) => state.orbitingLightColor);
+  const orbitingLightIntensity = useStudioStore((state: StudioState) => state.orbitingLightIntensity);
+  const orbitingLightRadius = useStudioStore((state: StudioState) => state.orbitingLightRadius);
+  const shadowMapSize = useStudioStore((state: StudioState) => state.shadowMapSize);
+  const shadowBias = useStudioStore((state: StudioState) => state.shadowBias);
+  const shadowRadius = useStudioStore((state: StudioState) => state.shadowRadius);
+  const castShadows = useStudioStore((state: StudioState) => state.castShadows);
+
+  useFrame((state) => {
+    if (!lightRef.current || !orbitingLightEnabled) return;
+    const t = state.clock.getElapsedTime() * orbitingLightSpeed;
+    const x = Math.sin(t) * orbitingLightRadius;
+    const z = Math.cos(t) * orbitingLightRadius;
+    const y = Math.sin(t * 0.5) * (orbitingLightRadius * 0.4); // elegant vertical movement
+    lightRef.current.position.set(x, y, z);
+  });
+
+  if (!orbitingLightEnabled) return null;
+
+  return (
+    <pointLight
+      ref={lightRef}
+      color={orbitingLightColor}
+      intensity={orbitingLightIntensity}
+      castShadow={castShadows}
+      shadow-mapSize-width={shadowMapSize}
+      shadow-mapSize-height={shadowMapSize}
+      shadow-bias={shadowBias}
+      shadow-radius={shadowRadius}
+    />
+  );
+};
+
 export const SceneCanvas: React.FC = () => {
   const stageLighting = useStudioStore((state: StudioState) => state.stageLighting);
   const ambientIntensity = useStudioStore((state: StudioState) => state.ambientIntensity);
+  const ambientColor = useStudioStore((state: StudioState) => state.ambientColor);
   const directionalIntensity = useStudioStore((state: StudioState) => state.directionalIntensity);
+  const directionalColor = useStudioStore((state: StudioState) => state.directionalColor);
+  const directionalPosition = useStudioStore((state: StudioState) => state.directionalPosition);
+  const environmentIntensity = useStudioStore((state: StudioState) => state.environmentIntensity);
+  const environmentRotation = useStudioStore((state: StudioState) => state.environmentRotation);
+  const backgroundColor = useStudioStore((state: StudioState) => state.backgroundColor);
+  const shadowMapSize = useStudioStore((state: StudioState) => state.shadowMapSize);
+  const shadowBias = useStudioStore((state: StudioState) => state.shadowBias);
+  const shadowRadius = useStudioStore((state: StudioState) => state.shadowRadius);
+  const castShadows = useStudioStore((state: StudioState) => state.castShadows);
 
   return (
     <div className="w-full h-full relative select-none">
@@ -76,16 +125,19 @@ export const SceneCanvas: React.FC = () => {
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
           className="w-full h-full"
         >
-          <color attach="background" args={['#05070B']} />
+          <color attach="background" args={[backgroundColor]} />
           
           {/* Lights */}
-          <ambientLight intensity={ambientIntensity} />
+          <ambientLight intensity={ambientIntensity} color={ambientColor} />
           <directionalLight
-            position={[5, 8, 5]}
+            position={directionalPosition}
             intensity={directionalIntensity}
-            castShadow
-            shadow-mapSize-width={1024}
-            shadow-mapSize-height={1024}
+            color={directionalColor}
+            castShadow={castShadows}
+            shadow-mapSize-width={shadowMapSize}
+            shadow-mapSize-height={shadowMapSize}
+            shadow-bias={shadowBias}
+            shadow-radius={shadowRadius}
             shadow-camera-far={20}
             shadow-camera-left={-6}
             shadow-camera-right={6}
@@ -94,6 +146,9 @@ export const SceneCanvas: React.FC = () => {
           />
           <pointLight position={[-6, -4, -4]} intensity={0.6} color="#9D4EDD" />
           <pointLight position={[6, 4, 3]} intensity={0.8} color="#00F0FF" />
+
+          {/* Orbiting dynamic light */}
+          <OrbitingLight />
 
           {/* Environment HDR Preset */}
           <CanvasErrorBoundary
@@ -105,7 +160,13 @@ export const SceneCanvas: React.FC = () => {
             }
           >
             <Suspense fallback={null}>
-              <Environment preset={stageLighting} />
+              <Environment 
+                {...({
+                  preset: stageLighting,
+                  environmentIntensity: environmentIntensity,
+                  rotation: [0, environmentRotation * Math.PI / 180, 0]
+                } as any)}
+              />
             </Suspense>
           </CanvasErrorBoundary>
 

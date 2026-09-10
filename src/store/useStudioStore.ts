@@ -65,6 +65,29 @@ export interface StudioState {
   showGrid: boolean;
   cameraResetTrigger: number;
 
+  // NEW Environment & Advanced lighting controls
+  environmentIntensity: number;
+  environmentRotation: number;
+  backgroundColor: string;
+
+  // Orbiting dynamic lights
+  orbitingLightEnabled: boolean;
+  orbitingLightSpeed: number;
+  orbitingLightColor: string;
+  orbitingLightIntensity: number;
+  orbitingLightRadius: number;
+
+  // Light colors and positions
+  ambientColor: string;
+  directionalColor: string;
+  directionalPosition: [number, number, number];
+
+  // Shadows
+  shadowMapSize: number;
+  shadowBias: number;
+  shadowRadius: number;
+  castShadows: boolean;
+
   // Perspective List Container properties
   perspectiveMode: PerspectiveMode;
   listItems: ListItem[];
@@ -88,6 +111,27 @@ export interface StudioState {
   setDirectionalIntensity: (intensity: number) => void;
   setShowGrid: (show: boolean) => void;
   triggerCameraReset: () => void;
+
+  // NEW setters
+  setEnvironmentIntensity: (intensity: number) => void;
+  setEnvironmentRotation: (rotation: number) => void;
+  setBackgroundColor: (color: string) => void;
+
+  setOrbitingLightEnabled: (enabled: boolean) => void;
+  setOrbitingLightSpeed: (speed: number) => void;
+  setOrbitingLightColor: (color: string) => void;
+  setOrbitingLightIntensity: (intensity: number) => void;
+  setOrbitingLightRadius: (radius: number) => void;
+
+  setAmbientColor: (color: string) => void;
+  setDirectionalColor: (color: string) => void;
+  setDirectionalPosition: (position: [number, number, number]) => void;
+
+  setShadowMapSize: (size: number) => void;
+  setShadowBias: (bias: number) => void;
+  setShadowRadius: (radius: number) => void;
+  setCastShadows: (cast: boolean) => void;
+
   setPerspectiveMode: (mode: PerspectiveMode) => void;
   addListItem: (item: Omit<ListItem, 'id'>) => void;
   removeListItem: (id: string) => void;
@@ -201,6 +245,26 @@ const INITIAL_STATE = {
   cameraResetTrigger: 0,
   perspectiveMode: 'Push-in' as PerspectiveMode,
   listItems: DEFAULT_ITEMS,
+
+  // NEW defaults
+  environmentIntensity: 1.0,
+  environmentRotation: 0,
+  backgroundColor: '#05070B',
+
+  orbitingLightEnabled: true,
+  orbitingLightSpeed: 1.0,
+  orbitingLightColor: '#00F0FF',
+  orbitingLightIntensity: 1.5,
+  orbitingLightRadius: 5.0,
+
+  ambientColor: '#ffffff',
+  directionalColor: '#ffffff',
+  directionalPosition: [5, 8, 5] as [number, number, number],
+
+  shadowMapSize: 1024,
+  shadowBias: -0.001,
+  shadowRadius: 4,
+  castShadows: true,
 };
 
 const storeCreator: StateCreator<StudioState> = (set) => ({
@@ -230,6 +294,27 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
   setDirectionalIntensity: (directionalIntensity: number) => set({ directionalIntensity }),
   setShowGrid: (showGrid: boolean) => set({ showGrid }),
   triggerCameraReset: () => set((state: StudioState) => ({ cameraResetTrigger: state.cameraResetTrigger + 1 })),
+
+  // NEW setters
+  setEnvironmentIntensity: (environmentIntensity: number) => set({ environmentIntensity }),
+  setEnvironmentRotation: (environmentRotation: number) => set({ environmentRotation }),
+  setBackgroundColor: (backgroundColor: string) => set({ backgroundColor }),
+
+  setOrbitingLightEnabled: (orbitingLightEnabled: boolean) => set({ orbitingLightEnabled }),
+  setOrbitingLightSpeed: (orbitingLightSpeed: number) => set({ orbitingLightSpeed }),
+  setOrbitingLightColor: (orbitingLightColor: string) => set({ orbitingLightColor }),
+  setOrbitingLightIntensity: (orbitingLightIntensity: number) => set({ orbitingLightIntensity }),
+  setOrbitingLightRadius: (orbitingLightRadius: number) => set({ orbitingLightRadius }),
+
+  setAmbientColor: (ambientColor: string) => set({ ambientColor }),
+  setDirectionalColor: (directionalColor: string) => set({ directionalColor }),
+  setDirectionalPosition: (directionalPosition: [number, number, number]) => set({ directionalPosition }),
+
+  setShadowMapSize: (shadowMapSize: number) => set({ shadowMapSize }),
+  setShadowBias: (shadowBias: number) => set({ shadowBias }),
+  setShadowRadius: (shadowRadius: number) => set({ shadowRadius }),
+  setCastShadows: (castShadows: boolean) => set({ castShadows }),
+
   setPerspectiveMode: (perspectiveMode: PerspectiveMode) => set({ perspectiveMode }),
   addListItem: (item: Omit<ListItem, 'id'>) =>
     set((state: StudioState) => ({
