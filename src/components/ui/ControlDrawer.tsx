@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
-import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap, Download, Camera, Film } from 'lucide-react';
+import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap, Download, Camera, Film, Sparkles } from 'lucide-react';
 import { useStudioStore, MaterialType, AnimationPreset, StageLighting } from '../../store/useStudioStore';
 
-type TabType = 'design' | 'physics' | 'motion' | 'camera' | 'lighting' | 'export' | 'performance';
+type TabType = 'design' | 'physics' | 'visual' | 'motion' | 'camera' | 'lighting' | 'export' | 'performance';
 
 const FONTS = [
   { label: 'Helvetiker Bold', value: '/fonts/helvetiker_bold.typeface.json' },
   { label: 'Helvetiker Regular', value: '/fonts/helvetiker_regular.typeface.json' },
   { label: 'Optimer Bold', value: '/fonts/optimer_bold.typeface.json' },
+  { label: 'Optimer Regular', value: '/fonts/optimer_regular.typeface.json' },
   { label: 'Droid Sans Bold', value: '/fonts/droid_sans_bold.typeface.json' },
+  { label: 'Droid Sans Regular', value: '/fonts/droid_sans_regular.typeface.json' },
+  { label: 'Droid Sans Mono', value: '/fonts/droid_sans_mono_regular.typeface.json' },
+  { label: 'Droid Serif Bold', value: '/fonts/droid_serif_bold.typeface.json' },
+  { label: 'Droid Serif Regular', value: '/fonts/droid_serif_regular.typeface.json' },
   { label: 'Gentilis Bold', value: '/fonts/gentilis_bold.typeface.json' },
+  { label: 'Gentilis Regular', value: '/fonts/gentilis_regular.typeface.json' },
 ];
 
 const MATERIALS: { name: MaterialType; desc: string }[] = [
@@ -52,6 +58,16 @@ export const ControlDrawer: React.FC = () => {
     updateMaterialParams,
     wireframeMode,
     setWireframeMode,
+    wireframeColor,
+    setWireframeColor,
+    glowHalos,
+    setGlowHalos,
+    bloomIntensity,
+    setBloomIntensity,
+    bloomThreshold,
+    setBloomThreshold,
+    bloomRadius,
+    setBloomRadius,
     physics,
     updatePhysics,
     animationPreset,
@@ -176,6 +192,18 @@ export const ControlDrawer: React.FC = () => {
             aria-label="Open Physics and Geometry tab"
           >
             <Sliders className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setActiveTab('visual'); setIsOpen(true); }}
+            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+              activeTab === 'visual' && isOpen
+                ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+            }`}
+            title="Visual Enhancements: Bloom glow halos, wireframe stroke styling, emissive shader effects, and camera tunnel zoom"
+            aria-label="Open Visual Enhancements tab"
+          >
+            <Sparkles className="w-4 h-4" />
           </button>
           <button
             onClick={() => { setActiveTab('motion'); setIsOpen(true); }}
@@ -617,27 +645,72 @@ export const ControlDrawer: React.FC = () => {
                 </div>
 
                 {/* Wireframe Toggle */}
-                <div className="flex items-center justify-between pt-2">
-                  <span 
-                    className="text-xs font-mono text-slate-400 uppercase"
-                    title="Toggle polygon wireframe mesh view to inspect geometry triangles."
-                  >
-                    Wireframe Mode
-                  </span>
-                  <button
-                    onClick={() => setWireframeMode(!wireframeMode)}
-                    className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                      wireframeMode ? 'bg-cyan-500' : 'bg-slate-800'
-                    }`}
-                    title={wireframeMode ? 'Disable wireframe mode' : 'Enable wireframe mode'}
-                    aria-label="Toggle wireframe mode"
-                  >
-                    <div
-                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                        wireframeMode ? 'translate-x-6' : 'translate-x-0'
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span 
+                      className="text-xs font-mono text-slate-400 uppercase"
+                      title="Toggle polygon wireframe mesh view to inspect geometry triangles."
+                    >
+                      Wireframe Mode
+                    </span>
+                    <button
+                      onClick={() => setWireframeMode(!wireframeMode)}
+                      className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        wireframeMode ? 'bg-cyan-500' : 'bg-slate-800'
                       }`}
-                    />
-                  </button>
+                      title={wireframeMode ? 'Disable wireframe mode' : 'Enable wireframe mode'}
+                      aria-label="Toggle wireframe mode"
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          wireframeMode ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {wireframeMode && (
+                    <div className="space-y-2 pt-1 animate-fadeIn">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-slate-400 uppercase">Wireframe Stroke Color</span>
+                        <span className="font-mono text-xs text-slate-300 uppercase">{wireframeColor}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={wireframeColor}
+                          onChange={(e) => setWireframeColor(e.target.value)}
+                          className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                          title="Pick wireframe stroke color"
+                          aria-label="Wireframe color picker"
+                        />
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {[
+                            { name: 'Cyan', color: '#00F0FF' },
+                            { name: 'Neon Green', color: '#39FF14' },
+                            { name: 'Hot Pink', color: '#FF007F' },
+                            { name: 'Amber', color: '#FFB000' },
+                            { name: 'Violet', color: '#B026FF' },
+                            { name: 'White', color: '#FFFFFF' },
+                          ].map((swatch) => (
+                            <button
+                              key={swatch.color}
+                              type="button"
+                              onClick={() => setWireframeColor(swatch.color)}
+                              className={`w-4 h-4 rounded-full border transition-transform ${
+                                wireframeColor.toLowerCase() === swatch.color.toLowerCase()
+                                  ? 'scale-125 border-white shadow-sm ring-1 ring-cyan-400'
+                                  : 'border-white/20 hover:scale-110'
+                              }`}
+                              style={{ backgroundColor: swatch.color }}
+                              title={`Set wireframe color to ${swatch.name}`}
+                              aria-label={`Set wireframe color to ${swatch.name}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -815,6 +888,294 @@ export const ControlDrawer: React.FC = () => {
                     title="Slide to adjust edge bevel rounding steps"
                     aria-label="Bevel Segments slider"
                   />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'visual' && (
+              <div className="space-y-6 animate-fadeIn pb-8">
+                {/* Visual Enhancements Header */}
+                <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Visual Enhancements</span>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Configure post-processing UnrealBloom glow, wireframe edge highlighting, shader emissive intensity, and camera tunnel zoom pathing.
+                </p>
+
+                {/* Section 1: Post-Processing Bloom & Glow Halos */}
+                <div className="p-4 rounded-xl bg-slate-950/40 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-mono text-cyan-400 font-semibold uppercase flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Bloom & Glow Halos</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400">
+                        UnrealBloom post-processing pass with emissive aura
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setGlowHalos(!glowHalos)}
+                      className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        glowHalos ? 'bg-cyan-500' : 'bg-slate-800'
+                      }`}
+                      title={glowHalos ? 'Disable Bloom and Glow Halos' : 'Enable Bloom and Glow Halos'}
+                      aria-label="Toggle Bloom and Glow Halos"
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          glowHalos ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {glowHalos && (
+                    <div className="space-y-3 pt-2 border-t border-white/5 animate-fadeIn">
+                      {/* Bloom Intensity */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span title="Controls the overall radiance and glow brightness of emissive surfaces">
+                            Bloom Intensity
+                          </span>
+                          <span className="text-cyan-400">{bloomIntensity.toFixed(1)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="5.0"
+                          step="0.1"
+                          value={bloomIntensity}
+                          onChange={(e) => setBloomIntensity(parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust Bloom Intensity"
+                          aria-label="Bloom intensity slider"
+                        />
+                      </div>
+
+                      {/* Bloom Threshold */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span title="Luminance cutoff threshold for what begins to bloom (lower = more objects bloom)">
+                            Bloom Threshold
+                          </span>
+                          <span className="text-cyan-400">{bloomThreshold.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1.0"
+                          step="0.05"
+                          value={bloomThreshold}
+                          onChange={(e) => setBloomThreshold(parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust Bloom Threshold"
+                          aria-label="Bloom threshold slider"
+                        />
+                      </div>
+
+                      {/* Bloom Radius */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span title="Diffusion dispersion radius of the bloom glow aura">
+                            Bloom Radius
+                          </span>
+                          <span className="text-cyan-400">{bloomRadius.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1.5"
+                          step="0.05"
+                          value={bloomRadius}
+                          onChange={(e) => setBloomRadius(parseFloat(e.target.value))}
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust Bloom Radius"
+                          aria-label="Bloom radius slider"
+                        />
+                      </div>
+
+                      {/* Emissive Glow Multiplier */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400 font-mono">
+                          <span title="Direct emissive glow multiplier on the 3D text material">
+                            Emissive Glow
+                          </span>
+                          <span className="text-cyan-400">
+                            {(materialParams.emissiveIntensity ?? 2.0).toFixed(1)}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="10.0"
+                          step="0.1"
+                          value={materialParams.emissiveIntensity ?? 2.0}
+                          onChange={(e) =>
+                            updateMaterialParams({ emissiveIntensity: parseFloat(e.target.value) })
+                          }
+                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                          title="Adjust Emissive Glow Intensity"
+                          aria-label="Emissive glow intensity slider"
+                        />
+                      </div>
+
+                      {/* Emissive Color Picker */}
+                      <div className="space-y-1.5 pt-1">
+                        <label className="text-[11px] font-mono text-slate-400 uppercase">
+                          Emissive Glow Color
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={emissiveColor}
+                            onChange={(e) => setEmissiveColor(e.target.value)}
+                            className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                            title="Pick emissive glow color"
+                            aria-label="Emissive color picker"
+                          />
+                          <span className="font-mono text-xs text-slate-300 uppercase">
+                            {emissiveColor}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 2: Wireframe Mode & Color */}
+                <div className="p-4 rounded-xl bg-slate-950/40 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-mono text-cyan-400 font-semibold uppercase flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5" />
+                        <span>Wireframe Mode</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400">
+                        Overlay polygon wireframe edges with custom stroke color
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setWireframeMode(!wireframeMode)}
+                      className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        wireframeMode ? 'bg-cyan-500' : 'bg-slate-800'
+                      }`}
+                      title={wireframeMode ? 'Disable wireframe mode' : 'Enable wireframe mode'}
+                      aria-label="Toggle wireframe mode"
+                    >
+                      <div
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                          wireframeMode ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {wireframeMode && (
+                    <div className="space-y-3 pt-2 border-t border-white/5 animate-fadeIn">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-mono text-slate-400 uppercase">
+                          Wireframe Stroke Color
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={wireframeColor}
+                            onChange={(e) => setWireframeColor(e.target.value)}
+                            className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                            title="Pick wireframe stroke color"
+                            aria-label="Wireframe color picker"
+                          />
+                          <span className="font-mono text-xs text-slate-300 uppercase">
+                            {wireframeColor}
+                          </span>
+                        </div>
+                        {/* Quick Color Swatches */}
+                        <div className="flex items-center gap-2 pt-1">
+                          {[
+                            { name: 'Cyan', color: '#00F0FF' },
+                            { name: 'Neon Green', color: '#39FF14' },
+                            { name: 'Hot Pink', color: '#FF007F' },
+                            { name: 'Amber', color: '#FFB000' },
+                            { name: 'Violet', color: '#B026FF' },
+                            { name: 'White', color: '#FFFFFF' },
+                          ].map((swatch) => (
+                            <button
+                              key={swatch.color}
+                              type="button"
+                              onClick={() => setWireframeColor(swatch.color)}
+                              className={`w-5 h-5 rounded-full border transition-transform ${
+                                wireframeColor.toLowerCase() === swatch.color.toLowerCase()
+                                  ? 'scale-125 border-white shadow-sm ring-1 ring-cyan-400'
+                                  : 'border-white/20 hover:scale-110'
+                              }`}
+                              style={{ backgroundColor: swatch.color }}
+                              title={`Set wireframe color to ${swatch.name}`}
+                              aria-label={`Set wireframe color to ${swatch.name}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 3: Camera Tunnel Zoom */}
+                <div className="p-4 rounded-xl bg-slate-950/40 border border-white/5 space-y-4">
+                  <div className="space-y-1">
+                    <div className="text-xs font-mono text-cyan-400 font-semibold uppercase flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>Camera Tunnel Zoom</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      Modular camera pathing through typography character loops
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['Orbit', 'TunnelZoom'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setCameraMode(mode)}
+                        className={`p-2.5 rounded-xl border text-left transition-all ${
+                          cameraMode === mode
+                            ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-medium shadow-sm'
+                            : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                        }`}
+                        title={`Switch camera to ${mode} mode`}
+                        aria-label={`Switch camera to ${mode} mode`}
+                      >
+                        <div className="font-bold text-xs">
+                          {mode === 'TunnelZoom' ? 'Tunnel Zoom' : 'Standard Orbit'}
+                        </div>
+                        <div className="text-[9px] opacity-75 mt-0.5">
+                          {mode === 'TunnelZoom' ? 'Cinematic glyph flight' : '360° orbit controls'}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {cameraMode === 'TunnelZoom' && (
+                    <div className="space-y-2 pt-2 border-t border-white/5 animate-fadeIn">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-slate-400 uppercase">Tunnel Zoom Speed</span>
+                        <span className="text-cyan-400">{tunnelZoomSpeed.toFixed(1)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.2"
+                        max="3.0"
+                        step="0.1"
+                        value={tunnelZoomSpeed}
+                        onChange={(e) => setTunnelZoomSpeed(parseFloat(e.target.value))}
+                        className="w-full accent-cyan-400 cursor-pointer"
+                        title="Adjust camera tunnel zoom speed"
+                        aria-label="Tunnel zoom speed slider"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
