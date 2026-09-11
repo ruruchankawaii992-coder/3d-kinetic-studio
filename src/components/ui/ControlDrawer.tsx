@@ -143,6 +143,15 @@ export const ControlDrawer: React.FC = () => {
     exportProgress,
     exportStatus,
     setExportState,
+    backgroundMediaType,
+    setBackgroundMediaType,
+    backgroundAssetUrl,
+    backgroundAssetName,
+    setBackgroundAsset,
+    uploadProgress,
+    setUploadProgress,
+    uploadError,
+    setUploadError,
   } = useStudioStore();
 
   const [transparentBg, setTransparentBg] = useState(false);
@@ -150,16 +159,55 @@ export const ControlDrawer: React.FC = () => {
   const [videoFps, setVideoFps] = useState(60);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const handleVideoTextureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadError(null);
+    setUploadProgress(0);
+
+    const validTypes = ['video/mp4', 'video/webm', 'image/png', 'image/jpeg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setUploadError('Invalid file type. Please upload an MP4/WebM video or PNG/JPEG/WEBP texture asset.');
+      return;
+    }
+
+    if (file.size > 150 * 1024 * 1024) {
+      setUploadError('File is too large. Max supported size for 4K video asset is 150MB.');
+      return;
+    }
+
+    let currentProgress = 0;
+    const interval = setInterval(() => {
+      currentProgress += 20;
+      if (currentProgress >= 100) {
+        currentProgress = 100;
+        clearInterval(interval);
+      }
+      setUploadProgress(currentProgress);
+    }, 120);
+
+    const objectUrl = URL.createObjectURL(file);
+    const isVideo = file.type.startsWith('video/');
+
+    setTimeout(() => {
+      setBackgroundMediaType(isVideo ? 'video' : 'texture');
+      setBackgroundAsset(objectUrl, file.name);
+      setUploadProgress(100);
+    }, 800);
+  };
+
   return (
     <aside
-      className={`fixed top-24 bottom-6 right-6 z-40 transition-all duration-300 ease-in-out flex ${
+      className={`fixed top-24 bottom-28 md:bottom-6 right-6 z-40 transition-all duration-300 ease-in-out flex flex-col ${
         isOpen ? 'w-80 md:w-[30%] md:min-w-[320px] md:max-w-[420px]' : 'w-16'
       }`}
+      aria-label="3D Studio Control Drawer"
     >
       {/* Collapse / Expand Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="absolute -left-4 top-8 z-50 w-8 h-8 rounded-full backdrop-blur-xl bg-slate-900/90 border border-white/20 text-cyan-400 flex items-center justify-center hover:bg-slate-800 transition-colors shadow-lg"
+        className="absolute -left-4 top-8 z-50 w-9 h-9 min-w-[36px] min-h-[36px] md:w-8 md:h-8 rounded-full backdrop-blur-xl bg-slate-900/90 border border-white/20 text-cyan-400 flex items-center justify-center hover:bg-slate-800 transition-colors shadow-lg"
         title={isOpen ? 'Collapse Drawer (Hide control panel)' : 'Expand Drawer (Show control panel)'}
         aria-label={isOpen ? 'Collapse 3D studio control drawer' : 'Expand 3D studio control drawer'}
       >
@@ -168,10 +216,18 @@ export const ControlDrawer: React.FC = () => {
 
       <div className="w-full h-full rounded-2xl backdrop-blur-xl bg-slate-900/40 border border-white/10 flex flex-col overflow-hidden shadow-2xl">
         {/* Tab Navigation */}
-        <div className="flex border-b border-white/10 bg-slate-950/40">
+        <div 
+          className="flex overflow-x-auto scrollbar-none flex-nowrap border-b border-white/10 bg-slate-950/40 shrink-0"
+          role="tablist"
+          aria-label="Studio Control Tabs"
+        >
           <button
+            role="tab"
+            aria-selected={activeTab === 'design' && isOpen}
+            aria-controls="panel-design"
+            id="tab-design"
             onClick={() => { setActiveTab('design'); setIsOpen(true); }}
-            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+            className={`flex-1 min-w-[44px] min-h-[44px] px-3 py-3.5 flex items-center justify-center transition-all ${
               activeTab === 'design' && isOpen
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -179,11 +235,15 @@ export const ControlDrawer: React.FC = () => {
             title="Design & Typography: Typeface, text string, and material shaders"
             aria-label="Open Design and Typography tab"
           >
-            <Type className="w-4 h-4" />
+            <Type className="w-4 h-4 shrink-0" />
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'physics' && isOpen}
+            aria-controls="panel-physics"
+            id="tab-physics"
             onClick={() => { setActiveTab('physics'); setIsOpen(true); }}
-            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+            className={`flex-1 min-w-[44px] min-h-[44px] px-3 py-3.5 flex items-center justify-center transition-all ${
               activeTab === 'physics' && isOpen
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -191,11 +251,15 @@ export const ControlDrawer: React.FC = () => {
             title="Physics & Geometry: 3D extrusion depth, sloped bevel, and smoothness segments"
             aria-label="Open Physics and Geometry tab"
           >
-            <Sliders className="w-4 h-4" />
+            <Sliders className="w-4 h-4 shrink-0" />
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'visual' && isOpen}
+            aria-controls="panel-visual"
+            id="tab-visual"
             onClick={() => { setActiveTab('visual'); setIsOpen(true); }}
-            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+            className={`flex-1 min-w-[44px] min-h-[44px] px-3 py-3.5 flex items-center justify-center transition-all ${
               activeTab === 'visual' && isOpen
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -203,11 +267,15 @@ export const ControlDrawer: React.FC = () => {
             title="Visual Enhancements: Bloom glow halos, wireframe stroke styling, emissive shader effects, and camera tunnel zoom"
             aria-label="Open Visual Enhancements tab"
           >
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-4 h-4 shrink-0" />
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'motion' && isOpen}
+            aria-controls="panel-motion"
+            id="tab-motion"
             onClick={() => { setActiveTab('motion'); setIsOpen(true); }}
-            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+            className={`flex-1 min-w-[44px] min-h-[44px] px-3 py-3.5 flex items-center justify-center transition-all ${
               activeTab === 'motion' && isOpen
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -215,11 +283,15 @@ export const ControlDrawer: React.FC = () => {
             title="Kinetic Motion: Animation presets, speed multiplier, and motion intensity"
             aria-label="Open Kinetic Motion tab"
           >
-            <Play className="w-4 h-4" />
+            <Play className="w-4 h-4 shrink-0" />
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'camera' && isOpen}
+            aria-controls="panel-camera"
+            id="tab-camera"
             onClick={() => { setActiveTab('camera'); setIsOpen(true); }}
-            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+            className={`flex-1 min-w-[44px] min-h-[44px] px-3 py-3.5 flex items-center justify-center transition-all ${
               activeTab === 'camera' && isOpen
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -227,11 +299,15 @@ export const ControlDrawer: React.FC = () => {
             title="Camera & TunnelZoom: Toggle between standard OrbitControls and modular TunnelZoom camera pathing mode"
             aria-label="Open Camera and TunnelZoom tab"
           >
-            <Camera className="w-4 h-4" />
+            <Camera className="w-4 h-4 shrink-0" />
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'lighting' && isOpen}
+            aria-controls="panel-lighting"
+            id="tab-lighting"
             onClick={() => { setActiveTab('lighting'); setIsOpen(true); }}
-            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+            className={`flex-1 min-w-[44px] min-h-[44px] px-3 py-3.5 flex items-center justify-center transition-all ${
               activeTab === 'lighting' && isOpen
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -239,11 +315,15 @@ export const ControlDrawer: React.FC = () => {
             title="Stage & Lighting: HDRI environment preset, light intensities, and grid toggle"
             aria-label="Open Stage and Lighting tab"
           >
-            <Sun className="w-4 h-4" />
+            <Sun className="w-4 h-4 shrink-0" />
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'export' && isOpen}
+            aria-controls="panel-export"
+            id="tab-export"
             onClick={() => { setActiveTab('export'); setIsOpen(true); }}
-            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+            className={`flex-1 min-w-[44px] min-h-[44px] px-3 py-3.5 flex items-center justify-center transition-all ${
               activeTab === 'export' && isOpen
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -251,11 +331,15 @@ export const ControlDrawer: React.FC = () => {
             title="Export Studio: High-res 4K PNG snapshots and seamless 60fps WebM video loops"
             aria-label="Open Export tab"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4 shrink-0" />
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'performance' && isOpen}
+            aria-controls="panel-performance"
+            id="tab-performance"
             onClick={() => { setActiveTab('performance'); setIsOpen(true); }}
-            className={`flex-1 py-3.5 flex items-center justify-center transition-all ${
+            className={`flex-1 min-w-[44px] min-h-[44px] px-3 py-3.5 flex items-center justify-center transition-all ${
               activeTab === 'performance' && isOpen
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -263,13 +347,18 @@ export const ControlDrawer: React.FC = () => {
             title="Performance & Accessibility: Reduced-motion support, low-end smoothness mode, pixel ratio cap, shadow quality, and target FPS throttling"
             aria-label="Open Performance and Accessibility tab"
           >
-            <Zap className="w-4 h-4" />
+            <Zap className="w-4 h-4 shrink-0" />
           </button>
         </div>
 
         {/* Drawer Content */}
         {isOpen && (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 text-sm">
+          <div 
+            role="tabpanel"
+            id={`panel-${activeTab}`}
+            aria-labelledby={`tab-${activeTab}`}
+            className="flex-1 overflow-y-auto p-5 space-y-6 text-sm"
+          >
             {activeTab === 'design' && (
               <div className="space-y-5 animate-fadeIn">
                 <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
@@ -1054,7 +1143,7 @@ export const ControlDrawer: React.FC = () => {
                         <span>Wireframe Mode</span>
                       </div>
                       <p className="text-[10px] text-slate-400">
-                        Overlay polygon wireframe edges with custom stroke color
+                        Exclusive dedicated wireframe representation per font/mesh view
                       </p>
                     </div>
                     <button
@@ -1422,6 +1511,72 @@ export const ControlDrawer: React.FC = () => {
                       />
                       <span className="text-xs font-mono text-slate-300 uppercase">{backgroundColor}</span>
                     </div>
+                  </div>
+
+                  {/* 3D 4K Video / Texture Background Upload */}
+                  <div className="space-y-2 pt-2 border-t border-white/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-mono text-cyan-400 uppercase flex items-center gap-1.5">
+                          <Film className="w-3.5 h-3.5" />
+                          <span>3D 4K Video / Texture Upload</span>
+                        </label>
+                        <span className="text-[9px] font-mono text-cyan-300 bg-cyan-500/15 px-1.5 py-0.5 rounded uppercase">
+                          {backgroundMediaType}
+                        </span>
+                      </div>
+                      {backgroundAssetUrl && (
+                        <button
+                          onClick={() => {
+                            setBackgroundAsset(null, null);
+                            setBackgroundMediaType('color');
+                          }}
+                          className="text-[10px] text-red-400 hover:text-red-300 font-mono underline"
+                        >
+                          Clear Asset
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="relative border-2 border-dashed border-white/15 hover:border-cyan-400/50 rounded-xl p-4 text-center bg-slate-950/60 transition-colors group cursor-pointer">
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,image/png,image/jpeg,image/webp"
+                        onChange={handleVideoTextureUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                        title="Upload local 3D video (MP4/WebM up to 4K) or texture asset"
+                      />
+                      <div className="flex flex-col items-center gap-1.5">
+                        <Film className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                        <span className="text-xs font-medium text-slate-200">
+                          {backgroundAssetName ? backgroundAssetName : 'Drop 4K Video or Texture Asset'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          Supports MP4, WebM (up to 4K), PNG, JPEG, WEBP
+                        </span>
+                      </div>
+                    </div>
+
+                    {uploadProgress > 0 && uploadProgress < 100 && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                          <span>Uploading 3D Asset...</span>
+                          <span className="text-cyan-400">{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-cyan-400 transition-all duration-150"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {uploadError && (
+                      <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono">
+                        {uploadError}
+                      </div>
+                    )}
                   </div>
                 </div>
 

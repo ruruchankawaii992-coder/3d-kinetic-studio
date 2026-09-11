@@ -117,6 +117,13 @@ export interface StudioState {
   capturePngFn: ((transparent: boolean) => Promise<Blob>) | null;
   recordWebmFn: ((duration: number, fps: number, onProgress: (p: number) => void) => Promise<Blob>) | null;
 
+  // Background Media Asset properties
+  backgroundMediaType: 'color' | 'video' | 'texture';
+  backgroundAssetUrl: string | null;
+  backgroundAssetName: string | null;
+  uploadProgress: number;
+  uploadError: string | null;
+
   // Setters
   setText: (text: string) => void;
   setFont: (font: string) => void;
@@ -186,6 +193,10 @@ export interface StudioState {
     recordWebmFn: ((duration: number, fps: number, onProgress: (p: number) => void) => Promise<Blob>) | null
   ) => void;
   setExportState: (state: Partial<{ isExporting: boolean; exportProgress: number; exportStatus: string }>) => void;
+  setBackgroundMediaType: (type: 'color' | 'video' | 'texture') => void;
+  setBackgroundAsset: (url: string | null, name: string | null) => void;
+  setUploadProgress: (progress: number) => void;
+  setUploadError: (error: string | null) => void;
 
   resetAll: () => void;
 }
@@ -343,6 +354,13 @@ const INITIAL_STATE = {
   exportStatus: 'Ready',
   capturePngFn: null,
   recordWebmFn: null,
+
+  // Background Media Asset defaults
+  backgroundMediaType: 'color' as const,
+  backgroundAssetUrl: null,
+  backgroundAssetName: null,
+  uploadProgress: 0,
+  uploadError: null,
 };
 
 const storeCreator: StateCreator<StudioState> = (set) => ({
@@ -427,6 +445,11 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
 
   setExportFns: (capturePngFn, recordWebmFn) => set({ capturePngFn, recordWebmFn }),
   setExportState: (updates) => set((state) => ({ ...state, ...updates })),
+
+  setBackgroundMediaType: (backgroundMediaType) => set({ backgroundMediaType }),
+  setBackgroundAsset: (url, name) => set({ backgroundAssetUrl: url, backgroundAssetName: name, uploadError: null }),
+  setUploadProgress: (uploadProgress) => set({ uploadProgress }),
+  setUploadError: (uploadError) => set({ uploadError }),
 
   resetAll: () => set({ ...INITIAL_STATE }),
 });

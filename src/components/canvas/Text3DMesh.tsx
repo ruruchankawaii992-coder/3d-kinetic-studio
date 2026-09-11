@@ -166,6 +166,16 @@ export const Text3DMesh: React.FC = () => {
   });
 
   const renderMaterial = () => {
+    if (wireframeMode) {
+      return (
+        <meshBasicMaterial
+          color={wireframeColor}
+          wireframe={true}
+          transparent
+          opacity={glowHalos ? 0.9 : 0.6}
+        />
+      );
+    }
     switch (material) {
       case 'Chrome/Metallic':
         return (
@@ -266,35 +276,13 @@ export const Text3DMesh: React.FC = () => {
                 bevelSize={physics.bevelSize}
                 bevelOffset={physics.bevelOffset}
                 bevelSegments={lowPowerMode ? Math.max(1, Math.floor(physics.bevelSegments / 2)) : physics.bevelSegments}
-                castShadow
-                receiveShadow
+                castShadow={!wireframeMode}
+                receiveShadow={!wireframeMode}
                 position={[charData.positions[i], 0, 0]}
               >
                 {char}
                 {renderMaterial()}
               </Text3D>
-              {wireframeMode && (
-                <Text3D
-                  font={fontPath}
-                  size={1.2}
-                  height={physics.extrusionDepth}
-                  curveSegments={lowPowerMode ? Math.max(3, Math.floor(physics.curveSegments / 2)) : physics.curveSegments}
-                  bevelEnabled
-                  bevelThickness={physics.bevelThickness}
-                  bevelSize={physics.bevelSize}
-                  bevelOffset={physics.bevelOffset}
-                  bevelSegments={lowPowerMode ? Math.max(1, Math.floor(physics.bevelSegments / 2)) : physics.bevelSegments}
-                  position={[charData.positions[i], 0, 0]}
-                >
-                  {char}
-                  <meshBasicMaterial
-                    color={wireframeColor}
-                    wireframe
-                    transparent
-                    opacity={glowHalos ? 0.9 : 0.6}
-                  />
-                </Text3D>
-              )}
             </React.Fragment>
           ))}
         </group>

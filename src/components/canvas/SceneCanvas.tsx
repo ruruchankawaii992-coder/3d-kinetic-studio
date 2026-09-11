@@ -160,6 +160,81 @@ const OrbitingLight: React.FC = () => {
 import { forwardRef, useImperativeHandle } from 'react';
 import { useThree } from '@react-three/fiber';
 
+const VideoBackground: React.FC<{ url: string }> = ({ url }) => {
+  const [texture, setTexture] = React.useState<THREE.VideoTexture | null>(null);
+
+  useEffect(() => {
+    const video = document.createElement('video');
+    video.src = url;
+    video.crossOrigin = 'anonymous';
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.play().catch((err) => console.warn('Video background autoplay prevented:', err));
+
+    const vidTexture = new THREE.VideoTexture(video);
+    vidTexture.minFilter = THREE.LinearFilter;
+    vidTexture.magFilter = THREE.LinearFilter;
+    vidTexture.generateMipmaps = false;
+    setTexture(vidTexture);
+
+    return () => {
+      video.pause();
+      video.src = '';
+      vidTexture.dispose();
+    };
+  }, [url]);
+
+  if (!texture) return null;
+
+  return (
+    <mesh position={[0, 0, -12]} scale={[32, 18, 1]}>
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial map={texture} toneMapped={false} />
+    </mesh>
+  );
+};
+
+const TextureBackground: React.FC<{ url: string }> = ({ url }) => {
+  const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    loader.load(url, (tex) => {
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      setTexture(tex);
+    });
+
+    return () => {
+      if (texture) texture.dispose();
+    };
+  }, [url]);
+
+  if (!texture) return null;
+
+  return (
+    <mesh position={[0, 0, -12]} scale={[32, 18, 1]}>
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial map={texture} toneMapped={false} />
+    </mesh>
+  );
+};
+
+const BackgroundAssetMesh: React.FC = () => {
+  const backgroundMediaType = useStudioStore((state) => state.backgroundMediaType);
+  const backgroundAssetUrl = useStudioStore((state) => state.backgroundAssetUrl);
+
+  if (!backgroundAssetUrl) return null;
+
+  if (backgroundMediaType === 'video') {
+    return <VideoBackground url={backgroundAssetUrl} />;
+  } else if (backgroundMediaType === 'texture') {
+    return <TextureBackground url={backgroundAssetUrl} />;
+  }
+  return null;
+};
+
 const ExportHandler: React.FC = () => {
   const { gl, scene, camera } = useThree();
   const setExportFns = useStudioStore((state) => state.setExportFns);
@@ -364,6 +439,9 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
 
           {/* Orbiting dynamic light */}
           <OrbitingLight />
+
+          {/* Background Media Asset Mesh (Video / Texture) */}
+          <BackgroundAssetMesh />
 
           {/* Environment HDR Preset */}
           <CanvasErrorBoundary
