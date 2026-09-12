@@ -85,6 +85,64 @@ const CameraController: React.FC = () => {
 
       state.camera.position.copy(currentCamPos.current);
       state.camera.lookAt(currentLookAt.current);
+    } else if (cameraMode === 'TunnelZoom 2') {
+      const charCount = Math.max(1, text.length);
+      const spanWidth = charCount * 0.85;
+      
+      // Select a character that likely has an aperture (hole) to dive through
+      const apertureChars = /[OPADRBQeoapdbg04689]/;
+      let targetIndex = Math.floor(charCount / 2);
+      for (let i = 0; i < text.length; i++) {
+        if (apertureChars.test(text[i])) {
+          targetIndex = i;
+          break;
+        }
+      }
+
+      // Approximate X position of the target character's center in world space
+      const charSpacing = spanWidth / charCount;
+      const targetX = (targetIndex - (charCount - 1) / 2) * charSpacing;
+      
+      // Animation cycle parameters
+      const loopDuration = 12.0 / Math.max(0.1, tunnelZoomSpeed);
+      const cycleTime = (state.clock.getElapsedTime() % loopDuration) / loopDuration;
+      
+      let posX = 0, posY = 0, posZ = 14;
+      let lookX = 0, lookY = 0;
+
+      if (cycleTime < 0.25) {
+        // Phase 1: Zoomed out overview (Initial State)
+        const p = THREE.MathUtils.smoothstep(cycleTime / 0.25, 0, 1);
+        posX = THREE.MathUtils.lerp(0, targetX * 0.4, p);
+        posZ = THREE.MathUtils.lerp(14, 10, p);
+        lookX = THREE.MathUtils.lerp(0, targetX * 0.2, p);
+      } else if (cycleTime < 0.7) {
+        // Phase 2: Dive through the aperture (Transition)
+        const p = THREE.MathUtils.smoothstep((cycleTime - 0.25) / 0.45, 0, 1);
+        posX = THREE.MathUtils.lerp(targetX * 0.4, targetX, p);
+        // Subtle vertical oscillation for natural movement
+        posY = Math.sin(p * Math.PI) * 0.15; 
+        posZ = THREE.MathUtils.lerp(10, -5, p); // Dives completely through from +Z to -Z
+        lookX = targetX;
+        lookY = posY * 0.5;
+      } else {
+        // Phase 3: Complete pass-through and pull back for full reveal
+        const p = THREE.MathUtils.smoothstep((cycleTime - 0.7) / 0.3, 0, 1);
+        posX = THREE.MathUtils.lerp(targetX, 0, p);
+        posZ = THREE.MathUtils.lerp(-5, 14, p);
+        lookX = THREE.MathUtils.lerp(targetX, 0, p);
+        lookY = THREE.MathUtils.lerp(0.07, 0, p);
+      }
+
+      targetCamPos.current.set(posX, posY, posZ);
+      targetLookAt.current.set(lookX, lookY, 0);
+
+      const lerpFactor = Math.min(1, delta * 4);
+      currentCamPos.current.lerp(targetCamPos.current, lerpFactor);
+      currentLookAt.current.lerp(targetLookAt.current, lerpFactor);
+
+      state.camera.position.copy(currentCamPos.current);
+      state.camera.lookAt(currentLookAt.current);
     } else {
       // When switching back to Orbit mode, sync current vectors so orbit controls don't jump
       currentCamPos.current.copy(state.camera.position);
@@ -390,6 +448,7 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
   const bloomThreshold = useStudioStore((state: StudioState) => state.bloomThreshold);
   const bloomRadius = useStudioStore((state: StudioState) => state.bloomRadius);
   const glowHalos = useStudioStore((state: StudioState) => state.glowHalos);
+  const showGrid = useStudioStore((state: StudioState) => state.showGrid);
 
   const effectiveCastShadows = shadowQuality === 'off' ? false : castShadows;
   const effectiveShadowMapSize = 
@@ -442,6 +501,13 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
 
           {/* Background Media Asset Mesh (Video / Texture) */}
           <BackgroundAssetMesh />
+
+          {showGrid && (
+            <gridHelper 
+              args={[50, 50, '#00F0FF', '#334155']} 
+              position={[0, -2.5, 0]} 
+            />
+          )}
 
           {/* Environment HDR Preset */}
           <CanvasErrorBoundary

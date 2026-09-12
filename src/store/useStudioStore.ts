@@ -3,7 +3,7 @@ import { create, StateCreator } from 'zustand';
 export type MaterialType = 'Chrome/Metallic' | 'Frosted Glass' | 'Neon Glow' | 'Holographic/Iridescent' | 'Matte/Clay' | 'Gold/Brass';
 export type AnimationPreset = 'The Float' | 'The Vortex' | 'The Glitch' | 'The Wave' | 'The Assemble' | 'The Pulsar' | 'None';
 export type StageLighting = 'studio' | 'city' | 'sunset' | 'dawn' | 'night' | 'warehouse';
-export type CameraMode = 'Orbit' | 'TunnelZoom';
+export type CameraMode = 'Orbit' | 'TunnelZoom' | 'TunnelZoom 2';
 export type PerspectiveMode = 'Normal' | 'Push-in' | 'Tunnel Zoom In' | 'Tunnel Zoom Out';
 
 export interface ListItem {

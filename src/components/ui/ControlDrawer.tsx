@@ -1223,8 +1223,8 @@ export const ControlDrawer: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['Orbit', 'TunnelZoom'] as const).map((mode) => (
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['Orbit', 'TunnelZoom', 'TunnelZoom 2'] as const).map((mode) => (
                       <button
                         key={mode}
                         onClick={() => setCameraMode(mode)}
@@ -1236,17 +1236,17 @@ export const ControlDrawer: React.FC = () => {
                         title={`Switch camera to ${mode} mode`}
                         aria-label={`Switch camera to ${mode} mode`}
                       >
-                        <div className="font-bold text-xs">
-                          {mode === 'TunnelZoom' ? 'Tunnel Zoom' : 'Standard Orbit'}
+                        <div className="font-bold text-xs truncate">
+                          {mode === 'TunnelZoom' ? 'Tunnel Zoom' : mode === 'TunnelZoom 2' ? 'Tunnel Zoom 2' : 'Standard Orbit'}
                         </div>
-                        <div className="text-[9px] opacity-75 mt-0.5">
-                          {mode === 'TunnelZoom' ? 'Cinematic glyph flight' : '360° orbit controls'}
+                        <div className="text-[9px] opacity-75 mt-0.5 truncate">
+                          {mode === 'TunnelZoom' ? 'Cinematic flight' : mode === 'TunnelZoom 2' ? 'Full letter sweep' : '360° orbit'}
                         </div>
                       </button>
                     ))}
                   </div>
 
-                  {cameraMode === 'TunnelZoom' && (
+                  {(cameraMode === 'TunnelZoom' || cameraMode === 'TunnelZoom 2') && (
                     <div className="space-y-2 pt-2 border-t border-white/5 animate-fadeIn">
                       <div className="flex justify-between text-xs font-mono">
                         <span className="text-slate-400 uppercase">Tunnel Zoom Speed</span>
@@ -1400,8 +1400,8 @@ export const ControlDrawer: React.FC = () => {
                 {/* Camera Mode Selector */}
                 <div className="space-y-3">
                   <label className="text-xs font-mono text-slate-400 uppercase">Camera Mode</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['Orbit', 'TunnelZoom'] as const).map((mode) => (
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['Orbit', 'TunnelZoom', 'TunnelZoom 2'] as const).map((mode) => (
                       <button
                         key={mode}
                         onClick={() => setCameraMode(mode)}
@@ -1413,9 +1413,11 @@ export const ControlDrawer: React.FC = () => {
                         title={`Switch camera to ${mode} mode`}
                         aria-label={`Switch camera to ${mode} mode`}
                       >
-                        <div className="font-bold text-xs">{mode === 'TunnelZoom' ? 'Tunnel Zoom' : 'Standard Orbit'}</div>
-                        <div className="text-[9px] opacity-75 mt-0.5">
-                          {mode === 'TunnelZoom' ? 'Smooth flight through glyph holes' : 'Interactive 360 orbit controls'}
+                        <div className="font-bold text-xs truncate">
+                          {mode === 'TunnelZoom' ? 'Tunnel Zoom' : mode === 'TunnelZoom 2' ? 'Tunnel Zoom 2' : 'Standard Orbit'}
+                        </div>
+                        <div className="text-[9px] opacity-75 mt-0.5 truncate">
+                          {mode === 'TunnelZoom' ? 'Glyph flight' : mode === 'TunnelZoom 2' ? 'Full letter sweep' : '360 orbit'}
                         </div>
                       </button>
                     ))}
@@ -1423,7 +1425,7 @@ export const ControlDrawer: React.FC = () => {
                 </div>
 
                 {/* TunnelZoom Speed */}
-                {cameraMode === 'TunnelZoom' && (
+                {(cameraMode === 'TunnelZoom' || cameraMode === 'TunnelZoom 2') && (
                   <div className="space-y-2 pt-2 animate-fadeIn">
                     <div className="flex justify-between text-xs font-mono">
                       <span className="text-slate-400 uppercase">Tunnel Zoom Speed</span>
