@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap, Download, Camera, Film, Sparkles, Image, Trash2, RotateCw, Layers } from 'lucide-react';
 import { useStudioStore, MaterialType, AnimationPreset, StageLighting } from '../../store/useStudioStore';
 
-type TabType = 'design' | 'physics' | 'visual' | 'motion' | 'camera' | 'lighting' | 'export' | 'performance';
+type TabType = 'design' | 'physics' | 'visual' | 'motion' | 'camera' | 'lighting' | 'export' | 'performance' | 'presets';
 
 const FONTS = [
   { label: 'Helvetiker Bold', value: '/fonts/helvetiker_bold.typeface.json' },
@@ -175,12 +175,53 @@ export const ControlDrawer: React.FC = () => {
     isControlDrawerOpen: isOpen,
     setIsControlDrawerOpen: setIsOpen,
     toggleControlDrawer,
+    loadPreset,
   } = useStudioStore();
 
   const [transparentBg, setTransparentBg] = useState(false);
   const [videoDuration, setVideoDuration] = useState(8);
   const [videoFps, setVideoFps] = useState(60);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Presets & JSON Import state
+  const [presetInputJson, setPresetInputJson] = useState('');
+  const [presetImportSuccess, setPresetImportSuccess] = useState<string | null>(null);
+  const [presetImportError, setPresetImportError] = useState<string | null>(null);
+
+  const handleApplyPresetJson = () => {
+    setPresetImportError(null);
+    setPresetImportSuccess(null);
+
+    const trimmed = presetInputJson.trim();
+    if (!trimmed) {
+      setPresetImportError('Please enter a valid JSON preset string.');
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Preset JSON must be a valid JSON object.');
+      }
+
+      loadPreset(parsed);
+      setPresetImportSuccess('Preset successfully applied to studio!');
+      setPresetInputJson('');
+    } catch (err: any) {
+      setPresetImportError(`Malformed JSON: ${err.message || 'Please check syntax and try again.'}`);
+    }
+  };
+
+  const handleLoadSamplePreset = (sampleObj: object) => {
+    try {
+      setPresetInputJson(JSON.stringify(sampleObj, null, 2));
+      loadPreset(sampleObj);
+      setPresetImportError(null);
+      setPresetImportSuccess('Sample preset loaded and applied successfully!');
+    } catch (err: any) {
+      setPresetImportError('Could not load sample preset.');
+    }
+  };
 
   const handleVideoTextureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -706,6 +747,22 @@ export const ControlDrawer: React.FC = () => {
             aria-label="Open Performance and Accessibility tab"
           >
             <Zap className="w-4 h-4 shrink-0" />
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'presets' && isOpen}
+            aria-controls="panel-presets"
+            id="tab-presets"
+            onClick={() => { setActiveTab('presets'); setIsOpen(true); }}
+            className={`flex-1 min-w-[44px] min-h-[44px] px-3 py-3.5 flex items-center justify-center transition-all ${
+              activeTab === 'presets' && isOpen
+                ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+            }`}
+            title="Presets & Import: Manually paste and apply purchased JSON preset strings or showcase configurations"
+            aria-label="Open Presets and Import tab"
+          >
+            <Layers className="w-4 h-4 shrink-0" />
           </button>
         </div>
 
@@ -2507,6 +2564,116 @@ export const ControlDrawer: React.FC = () => {
                       aria-label="Set target FPS to 60"
                     >
                       60 FPS (Full Fluidity)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- Presets & Import Panel (Feature: Studio Presets Import Section) --- */}
+            {activeTab === 'presets' && (
+              <div className="space-y-6 animate-fadeIn pb-8">
+                <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                  <Layers className="w-4 h-4" />
+                  <span>Presets & JSON Import</span>
+                </div>
+
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Paste a purchased JSON preset string or showcase configuration to instantly load custom typography, materials, colors, and animation parameters into the studio.
+                </p>
+
+                {/* --- JSON Input Section --- */}
+                <div className="space-y-3 p-4 bg-slate-950/40 border border-white/10 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="preset-json-textarea" className="text-xs font-semibold text-cyan-300 uppercase font-mono">
+                      JSON Preset String
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-mono">UTF-8 / JSON Object</span>
+                  </div>
+
+                  <textarea
+                    id="preset-json-textarea"
+                    rows={8}
+                    value={presetInputJson}
+                    onChange={(e) => setPresetInputJson(e.target.value)}
+                    placeholder={`{\n  "text": "KINETIC 3D",\n  "color": "#00ffcc",\n  "material": "Neon Glow",\n  "animationPreset": "Tunnel Zoom",\n  "metalness": 0.95,\n  "roughness": 0.12\n}`}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-400 transition-colors resize-y"
+                    aria-label="Paste JSON preset string"
+                  />
+
+                  {presetImportError && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-400 font-mono flex items-start gap-2" role="alert">
+                      <span className="shrink-0 font-bold">⚠️</span>
+                      <span className="break-all">{presetImportError}</span>
+                    </div>
+                  )}
+
+                  {presetImportSuccess && (
+                    <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-xs text-cyan-300 font-mono flex items-center gap-2" role="status">
+                      <span className="shrink-0 font-bold">✨</span>
+                      <span>{presetImportSuccess}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={handleApplyPresetJson}
+                      className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 px-4 rounded-xl transition-all duration-300 text-xs shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                      title="Parse JSON and apply preset settings to the 3D Studio"
+                      aria-label="Apply Preset"
+                    >
+                      <span>Apply Preset</span>
+                      <span>✨</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPresetInputJson('');
+                        setPresetImportError(null);
+                        setPresetImportSuccess(null);
+                      }}
+                      className="px-4 py-3 bg-slate-900 hover:bg-slate-850 border border-white/10 text-slate-300 font-mono text-xs rounded-xl transition-all cursor-pointer"
+                      title="Clear textarea input"
+                      aria-label="Clear preset input"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                {/* --- Quick Sample Presets --- */}
+                <div className="space-y-3 p-4 bg-slate-950/40 border border-white/10 rounded-2xl">
+                  <div className="text-xs font-semibold text-cyan-300 uppercase font-mono">Quick Sample Presets</div>
+                  <p className="text-xs text-slate-400">
+                    Click any sample to test-load preset configurations instantly:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleLoadSamplePreset({
+                        text: "CYBERPUNK",
+                        color: "#ff0055",
+                        material: "Chrome/Metallic",
+                        animationPreset: "Glitch Shake",
+                        metalness: 0.9,
+                        roughness: 0.15
+                      })}
+                      className="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-850 border border-white/10 hover:border-cyan-500/40 transition-all text-xs group cursor-pointer"
+                    >
+                      <div className="font-bold text-slate-200 group-hover:text-cyan-300">Cyberpunk Glitch</div>
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">Metallic Chrome / Glitch</div>
+                    </button>
+                    <button
+                      onClick={() => handleLoadSamplePreset({
+                        text: "HOLOGRAPHIC",
+                        color: "#00ffcc",
+                        material: "Holographic/Iridescent",
+                        animationPreset: "Tunnel Zoom",
+                        iridescence: 1.0,
+                        clearcoat: 1.0
+                      })}
+                      className="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-850 border border-white/10 hover:border-cyan-500/40 transition-all text-xs group cursor-pointer"
+                    >
+                      <div className="font-bold text-slate-200 group-hover:text-cyan-300">Holographic Zoom</div>
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">Iridescent Sheen / Tunnel</div>
                     </button>
                   </div>
                 </div>
