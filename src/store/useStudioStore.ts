@@ -124,6 +124,21 @@ export interface StudioState {
   uploadProgress: number;
   uploadError: string | null;
 
+  // Custom 3D Model / Stage Material Custom Texture properties
+  customTextureUrl: string | null;
+  customTextureName: string | null;
+  customTextureThumbnail: string | null;
+  customTextureTiling: { x: number; y: number };
+  customTextureOffset: { x: number; y: number };
+  customTextureRotation: number;
+  customTextureLoading: boolean;
+  customTextureProgress: number;
+  customTextureError: string | null;
+
+  // UI Panels Layout & Mobile Concurrency Management
+  isControlDrawerOpen: boolean;
+  isPerspectiveListOpen: boolean;
+
   // Setters
   setText: (text: string) => void;
   setFont: (font: string) => void;
@@ -197,6 +212,24 @@ export interface StudioState {
   setBackgroundAsset: (url: string | null, name: string | null) => void;
   setUploadProgress: (progress: number) => void;
   setUploadError: (error: string | null) => void;
+
+  // Custom 3D Texture Setters
+  setCustomTextureUrl: (url: string | null) => void;
+  setCustomTextureName: (name: string | null) => void;
+  setCustomTextureThumbnail: (thumbnail: string | null) => void;
+  setCustomTextureTiling: (tiling: { x: number; y: number }) => void;
+  setCustomTextureOffset: (offset: { x: number; y: number }) => void;
+  setCustomTextureRotation: (rotation: number) => void;
+  setCustomTextureLoading: (loading: boolean) => void;
+  setCustomTextureProgress: (progress: number) => void;
+  setCustomTextureError: (error: string | null) => void;
+  clearCustomTexture: () => void;
+
+  // UI Panels Setters (with mobile auto-collapse)
+  setIsControlDrawerOpen: (open: boolean) => void;
+  setIsPerspectiveListOpen: (open: boolean) => void;
+  toggleControlDrawer: () => void;
+  togglePerspectiveList: () => void;
 
   resetAll: () => void;
 }
@@ -361,6 +394,21 @@ const INITIAL_STATE = {
   backgroundAssetName: null,
   uploadProgress: 0,
   uploadError: null,
+
+  // Custom 3D Texture defaults
+  customTextureUrl: null,
+  customTextureName: null,
+  customTextureThumbnail: null,
+  customTextureTiling: { x: 1, y: 1 },
+  customTextureOffset: { x: 0, y: 0 },
+  customTextureRotation: 0,
+  customTextureLoading: false,
+  customTextureProgress: 0,
+  customTextureError: null,
+
+  // UI Panels defaults
+  isControlDrawerOpen: typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
+  isPerspectiveListOpen: false,
 };
 
 const storeCreator: StateCreator<StudioState> = (set) => ({
@@ -451,7 +499,96 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
   setUploadProgress: (uploadProgress) => set({ uploadProgress }),
   setUploadError: (uploadError) => set({ uploadError }),
 
-  resetAll: () => set({ ...INITIAL_STATE }),
+  // Custom 3D Texture Setters
+  setCustomTextureUrl: (customTextureUrl) => set({ customTextureUrl }),
+  setCustomTextureName: (customTextureName) => set({ customTextureName }),
+  setCustomTextureThumbnail: (customTextureThumbnail) => set({ customTextureThumbnail }),
+  setCustomTextureTiling: (customTextureTiling) => set({ customTextureTiling }),
+  setCustomTextureOffset: (customTextureOffset) => set({ customTextureOffset }),
+  setCustomTextureRotation: (customTextureRotation) => set({ customTextureRotation }),
+  setCustomTextureLoading: (customTextureLoading) => set({ customTextureLoading }),
+  setCustomTextureProgress: (customTextureProgress) => set({ customTextureProgress }),
+  setCustomTextureError: (customTextureError) => set({ customTextureError }),
+  clearCustomTexture: () =>
+    set((state) => {
+      if (state.customTextureUrl && state.customTextureUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(state.customTextureUrl);
+        } catch (e) {
+          // ignore
+        }
+      }
+      return {
+        customTextureUrl: null,
+        customTextureName: null,
+        customTextureThumbnail: null,
+        customTextureTiling: { x: 1, y: 1 },
+        customTextureOffset: { x: 0, y: 0 },
+        customTextureRotation: 0,
+        customTextureLoading: false,
+        customTextureProgress: 0,
+        customTextureError: null,
+      };
+    }),
+
+  // UI Panels Setters (Mutual exclusivity on mobile devices)
+  setIsControlDrawerOpen: (open: boolean) =>
+    set((state) => {
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      return {
+        isControlDrawerOpen: open,
+        isPerspectiveListOpen: (open && isMobile) ? false : state.isPerspectiveListOpen,
+      };
+    }),
+  setIsPerspectiveListOpen: (open: boolean) =>
+    set((state) => {
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      return {
+        isPerspectiveListOpen: open,
+        isControlDrawerOpen: (open && isMobile) ? false : state.isControlDrawerOpen,
+      };
+    }),
+  toggleControlDrawer: () =>
+    set((state) => {
+      const nextOpen = !state.isControlDrawerOpen;
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      return {
+        isControlDrawerOpen: nextOpen,
+        isPerspectiveListOpen: (nextOpen && isMobile) ? false : state.isPerspectiveListOpen,
+      };
+    }),
+  togglePerspectiveList: () =>
+    set((state) => {
+      const nextOpen = !state.isPerspectiveListOpen;
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      return {
+        isPerspectiveListOpen: nextOpen,
+        isControlDrawerOpen: (nextOpen && isMobile) ? false : state.isControlDrawerOpen,
+      };
+    }),
+
+  resetAll: () =>
+    set((state) => {
+      if (state.customTextureUrl && state.customTextureUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(state.customTextureUrl);
+        } catch (e) {
+          // ignore
+        }
+      }
+      if (state.backgroundAssetUrl && state.backgroundAssetUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(state.backgroundAssetUrl);
+        } catch (e) {
+          // ignore
+        }
+      }
+      return {
+        ...INITIAL_STATE,
+        isControlDrawerOpen: typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
+        isPerspectiveListOpen: false,
+      };
+    }),
 });
 
 export const useStudioStore = create<StudioState>(storeCreator);

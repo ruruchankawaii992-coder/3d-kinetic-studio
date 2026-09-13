@@ -5,7 +5,6 @@ import { motion, AnimatePresence as _AnimatePresence, useReducedMotion } from 'f
 const MotionAnimatePresence = _AnimatePresence as any;
 
 export const PerspectiveListContainer: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [newItemText, setNewItemText] = useState('');
   const [newItemTag, setNewItemTag] = useState('Layer');
   
@@ -17,6 +16,8 @@ export const PerspectiveListContainer: React.FC = () => {
     listItems,
     addListItem,
     removeListItem,
+    isPerspectiveListOpen,
+    togglePerspectiveList,
   } = useStudioStore();
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -159,11 +160,11 @@ export const PerspectiveListContainer: React.FC = () => {
               e.stopPropagation();
               removeListItem(item.id);
             }}
-            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400 transition-all p-1 hover:bg-white/5 rounded-md"
+            className="md:opacity-0 md:group-hover:opacity-100 text-slate-400 hover:text-red-400 transition-all w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/5 rounded-md"
             title="Remove layer item from perspective list"
             aria-label={`Remove item ${item.label}`}
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </motion.div>
@@ -171,29 +172,29 @@ export const PerspectiveListContainer: React.FC = () => {
   }, [listItems, perspectiveMode, shouldReduceMotion]);
 
   return (
-    <div className="fixed top-24 left-6 z-40 w-72 md:w-80">
+    <div className="absolute top-20 sm:top-24 left-4 sm:left-6 z-40 w-[calc(100vw-2rem)] sm:w-72 md:w-80 max-w-sm pointer-events-auto">
       <div className="rounded-2xl backdrop-blur-xl bg-slate-900/40 border border-white/10 shadow-2xl overflow-hidden transition-all">
         {/* Header Bar */}
-        <div className="p-4 flex items-center justify-between border-b border-white/10 bg-slate-950/40">
+        <div className="p-3 sm:p-4 flex items-center justify-between border-b border-white/10 bg-slate-950/40">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-xs font-bold font-mono tracking-wider uppercase text-slate-200">
+            <h3 className="text-[10px] sm:text-xs font-bold font-mono tracking-wider uppercase text-slate-200">
               3D Perspective Layers
             </h3>
           </div>
 
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-colors"
-            title={isExpanded ? 'Collapse 3D Perspective Layer Panel' : 'Expand 3D Perspective Layer Panel'}
-            aria-label={isExpanded ? 'Collapse perspective layer list' : 'Expand perspective layer list'}
+            onClick={togglePerspectiveList}
+            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-colors"
+            title={isPerspectiveListOpen ? 'Collapse 3D Perspective Layer Panel' : 'Expand 3D Perspective Layer Panel'}
+            aria-label={isPerspectiveListOpen ? 'Collapse perspective layer list' : 'Expand perspective layer list'}
           >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {isPerspectiveListOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
 
         {/* Collapsible Layer Content */}
-        {isExpanded && (
+        {isPerspectiveListOpen && (
           <div className="p-4 space-y-4 text-sm animate-fadeIn">
             {/* Perspective Mode Switcher */}
             <div className="space-y-1.5">
@@ -210,7 +211,7 @@ export const PerspectiveListContainer: React.FC = () => {
                     onClick={() => setPerspectiveMode(mode)}
                     title={`Set depth mode to ${mode}`}
                     aria-label={`Set perspective mode ${mode}`}
-                    className={`px-2.5 py-1.5 text-[10px] font-mono uppercase rounded-lg border transition-all truncate ${
+                    className={`px-2 py-3 min-h-[44px] flex items-center justify-center text-[10px] font-mono uppercase rounded-lg border transition-all truncate ${
                       perspectiveMode === mode
                         ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold shadow-sm'
                         : 'bg-slate-900/60 border-white/5 text-slate-400 hover:bg-white/5 hover:text-slate-200'
@@ -224,7 +225,7 @@ export const PerspectiveListContainer: React.FC = () => {
 
             {/* 3D Preserved Perspective Container */}
             <div
-              className="perspective-container preserve-3d max-h-[320px] overflow-y-auto overflow-x-hidden space-y-3 p-4 relative custom-scrollbar"
+              className="perspective-container preserve-3d max-h-[280px] sm:max-h-[320px] overflow-y-auto overflow-x-hidden space-y-3 p-4 relative custom-scrollbar"
               style={{
                 perspective: '1000px',
                 transformStyle: 'preserve-3d',
@@ -244,13 +245,13 @@ export const PerspectiveListContainer: React.FC = () => {
             </div>
 
             {/* Add Item Form */}
-            <form onSubmit={handleAddItem} className="flex gap-2 pt-2 border-t border-white/10">
+            <form onSubmit={handleAddItem} className="flex gap-2 pt-2 border-t border-white/10 items-center">
               <input
                 type="text"
                 value={newItemText}
                 onChange={(e) => setNewItemText(e.target.value)}
-                placeholder="Add layer item..."
-                className="flex-1 px-3 py-1.5 text-xs bg-slate-900 border border-white/10 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-sans"
+                placeholder="Add layer..."
+                className="flex-1 px-3 py-2.5 text-base md:text-sm bg-slate-900 border border-white/10 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-sans min-w-0"
                 title="Enter label text for new 3D perspective item card"
                 aria-label="New layer item label text"
               />
@@ -259,17 +260,17 @@ export const PerspectiveListContainer: React.FC = () => {
                 value={newItemTag}
                 onChange={(e) => setNewItemTag(e.target.value)}
                 placeholder="Tag"
-                className="w-16 px-2 py-1.5 text-xs bg-slate-900 border border-white/10 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                className="w-14 sm:w-16 px-2 py-2.5 text-base md:text-sm bg-slate-900 border border-white/10 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono min-w-0"
                 title="Enter tag label for category"
                 aria-label="New layer item category tag"
               />
               <button
                 type="submit"
-                className="p-1.5 bg-cyan-500 text-slate-950 rounded-lg font-bold hover:bg-cyan-400 transition-colors flex items-center justify-center"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] bg-cyan-500 text-slate-950 rounded-lg font-bold hover:bg-cyan-400 transition-colors flex items-center justify-center flex-shrink-0"
                 title="Add item to perspective layer list"
                 aria-label="Add item button"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
               </button>
             </form>
           </div>

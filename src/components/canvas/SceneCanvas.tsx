@@ -8,25 +8,57 @@ import { useStudioStore, StudioState } from '../../store/useStudioStore';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
-class CanvasErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback?: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+interface CanvasErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode | ((props: { error: Error | null; retry: () => void; resetDefaults: () => void }) => React.ReactNode);
+  resetKey?: any;
+}
+
+interface CanvasErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class CanvasErrorBoundary extends React.Component<CanvasErrorBoundaryProps, CanvasErrorBoundaryState> {
+  constructor(props: CanvasErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): CanvasErrorBoundaryState {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: any) {
-    console.warn('Canvas subcomponent failed to load (likely HDR/Environment or asset):', error);
+    console.warn('Canvas subcomponent failed to load or render:', error);
   }
+
+  componentDidUpdate(prevProps: CanvasErrorBoundaryProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
+  private handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  private handleResetDefaults = () => {
+    useStudioStore.getState().clearCustomTexture();
+    useStudioStore.getState().setFont('/fonts/helvetiker_bold.typeface.json');
+    useStudioStore.getState().setMaterial('Chrome/Metallic');
+    this.setState({ hasError: false, error: null });
+  };
 
   render() {
     if (this.state.hasError) {
+      if (typeof this.props.fallback === 'function') {
+        return this.props.fallback({
+          error: this.state.error,
+          retry: this.handleRetry,
+          resetDefaults: this.handleResetDefaults,
+        });
+      }
       return this.props.fallback || null;
     }
     return this.props.children;
@@ -456,9 +488,66 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
     shadowQuality === 'medium' ? 1024 :
     shadowQuality === 'high' ? 2048 : shadowMapSize;
 
+  const fontPath = useStudioStore((state: StudioState) => state.font);
+  const material = useStudioStore((state: StudioState) => state.material);
+  const customTextureUrl = useStudioStore((state: StudioState) => state.customTextureUrl);
+
+  const [contextLost, setContextLost] = React.useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      console.warn('WebGL Context Lost. Awaiting recovery...');
+      setContextLost(true);
+    };
+
+    const onContextRestored = () => {
+      console.log('WebGL Context Restored successfully.');
+      setContextLost(false);
+    };
+
+    canvas.addEventListener('webglcontextlost', onContextLost, false);
+    canvas.addEventListener('webglcontextrestored', onContextRestored, false);
+
+    return () => {
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
+    };
+  }, []);
+
   return (
     <div className="w-full h-full relative select-none">
-      <ErrorBoundary componentName="Canvas">
+      {contextLost && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+          <div className="p-6 rounded-2xl glass-panel border border-yellow-500/30 text-center max-w-sm shadow-2xl">
+            <p className="text-yellow-400 font-bold mb-2 font-mono uppercase text-xs">Graphics Context Lost</p>
+            <p className="text-xs text-slate-300 mb-4 font-sans">
+              The WebGL GPU graphics context was temporarily lost.
+            </p>
+            <button
+              onClick={() => {
+                setContextLost(false);
+                useStudioStore.getState().triggerCameraReset();
+              }}
+              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold text-xs rounded-xl font-mono transition-colors shadow-md"
+            >
+              Recover Viewport
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ErrorBoundary
+        componentName="Canvas"
+        onReset={() => {
+          useStudioStore.getState().clearCustomTexture();
+          useStudioStore.getState().setFont('/fonts/helvetiker_bold.typeface.json');
+          useStudioStore.getState().setMaterial('Chrome/Metallic');
+        }}
+      >
         <Canvas
           ref={canvasRef}
           camera={{ position: [0, 0, 6], fov: 45 }}
@@ -532,15 +621,40 @@ export const SceneCanvas = forwardRef<SceneCanvasRef, {}>((_, ref) => {
           {/* Controls */}
           <CameraController />
 
-          {/* 3D Geometry */}
+          {/* 3D Geometry with interactive recovery boundary */}
           <CanvasErrorBoundary
-            fallback={
+            resetKey={`${fontPath}-${material}-${customTextureUrl || ''}`}
+            fallback={({ error, retry, resetDefaults }) => (
               <Html center>
-                <div className="p-4 rounded-xl glass-panel text-red-400 text-xs font-mono">
-                  Failed to load 3D mesh.
+                <div className="flex flex-col items-center justify-center p-6 rounded-2xl glass-panel border border-red-500/30 bg-slate-900/95 text-center max-w-sm shadow-2xl backdrop-blur-xl">
+                  <div className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm font-bold text-white mb-1">3D Mesh Render Failed</h3>
+                  <p className="text-[11px] text-slate-400 font-mono mb-4 line-clamp-2">
+                    {error?.message || 'Could not compile 3D text geometry or shader material.'}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={retry}
+                      className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono rounded-lg transition-colors shadow-md"
+                    >
+                      Retry
+                    </button>
+                    <button
+                      onClick={resetDefaults}
+                      className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-medium font-mono rounded-lg transition-colors border border-white/10"
+                    >
+                      Reset Defaults
+                    </button>
+                  </div>
                 </div>
               </Html>
-            }
+            )}
           >
             <Suspense fallback={<LoadingFallback />}>
               <Text3DMesh />

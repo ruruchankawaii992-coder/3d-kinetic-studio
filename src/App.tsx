@@ -1,47 +1,53 @@
-import React from 'react';
-import { SceneCanvas } from './components/canvas/SceneCanvas';
-import { GlassHeader } from './components/ui/GlassHeader';
-import { ControlDrawer } from './components/ui/ControlDrawer';
-import { PerspectiveListContainer } from './components/ui/PerspectiveListContainer';
-import { MotionDock } from './components/ui/MotionDock';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { NavigationHeader } from './components/ui/NavigationHeader';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import HomePage from './pages/HomePage';
+import ShowcasePage from './pages/ShowcasePage';
+import StorePage from './pages/StorePage';
+
+// Lazy load the StudioPage
+const StudioPage = lazy(() => import('./pages/StudioPage'));
+
+const Layout: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-[#0B0E14] text-slate-100 flex flex-col">
+      <NavigationHeader />
+      <main className="flex-1 relative overflow-hidden">
+        <Outlet />
+      </main>
+    </div>
+  );
+};
+
+const LoadingScreen: React.FC = () => (
+  <div className="w-full h-full min-h-[60vh] flex flex-col items-center justify-center gap-4">
+    <div className="w-12 h-12 border-4 border-neonCyan/20 border-t-neonCyan rounded-full animate-spin" />
+    <p className="text-slate-400 font-mono text-sm animate-pulse">Initializing 3D Engine...</p>
+  </div>
+);
 
 export const App: React.FC = () => {
   return (
-    <ErrorBoundary componentName="AppRoot">
-      <main className="relative w-screen h-screen overflow-hidden bg-[#0B0E14] text-slate-100 flex flex-col">
-        {/* Background Neon Ambient Glows */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-neonCyan/10 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-electricPurple/10 rounded-full blur-[140px] pointer-events-none" />
-
-        {/* Glassmorphism Header */}
-        <ErrorBoundary componentName="GlassHeader">
-          <GlassHeader />
-        </ErrorBoundary>
-
-        {/* 3D WebGL Canvas Layer */}
-        <section className="flex-1 w-full h-full relative z-0">
-          <ErrorBoundary componentName="SceneCanvasContainer">
-            <SceneCanvas />
-          </ErrorBoundary>
-        </section>
-
-        {/* Interactive 3D Perspective List Overlay */}
-        <ErrorBoundary componentName="PerspectiveListContainer">
-          <PerspectiveListContainer />
-        </ErrorBoundary>
-
-        {/* Right Collapsible Control Drawer */}
-        <ErrorBoundary componentName="ControlDrawer">
-          <ControlDrawer />
-        </ErrorBoundary>
-
-        {/* Bottom Kinetic Motion Dock */}
-        <ErrorBoundary componentName="MotionDock">
-          <MotionDock />
-        </ErrorBoundary>
-      </main>
-    </ErrorBoundary>
+    <BrowserRouter>
+      <ErrorBoundary componentName="AppRoot">
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<HomePage />} />
+            <Route path="showcase" element={<ShowcasePage />} />
+            <Route path="store" element={<StorePage />} />
+            <Route 
+              path="studio" 
+              element={
+                <Suspense fallback={<LoadingScreen />}>
+                  <StudioPage />
+                </Suspense>
+              } 
+            />
+          </Route>
+        </Routes>
+      </ErrorBoundary>
+    </BrowserRouter>
   );
 };
 

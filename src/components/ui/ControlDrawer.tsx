@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap, Download, Camera, Film, Sparkles } from 'lucide-react';
+import { Type, Sliders, Play, Sun, ChevronRight, ChevronLeft, Palette, Zap, Download, Camera, Film, Sparkles, Image, Trash2, RotateCw, Layers } from 'lucide-react';
 import { useStudioStore, MaterialType, AnimationPreset, StageLighting } from '../../store/useStudioStore';
 
 type TabType = 'design' | 'physics' | 'visual' | 'motion' | 'camera' | 'lighting' | 'export' | 'performance';
@@ -40,7 +40,6 @@ const PRESETS: { name: AnimationPreset; desc: string }[] = [
 const LIGHTING_PRESETS: StageLighting[] = ['studio', 'city', 'sunset', 'dawn', 'night', 'warehouse'];
 
 export const ControlDrawer: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('design');
 
   const {
@@ -152,6 +151,30 @@ export const ControlDrawer: React.FC = () => {
     setUploadProgress,
     uploadError,
     setUploadError,
+
+    // Custom 3D texture state and setters
+    customTextureUrl,
+    customTextureName,
+    customTextureThumbnail,
+    customTextureTiling,
+    customTextureOffset,
+    customTextureRotation,
+    customTextureLoading,
+    customTextureProgress,
+    customTextureError,
+    setCustomTextureUrl,
+    setCustomTextureName,
+    setCustomTextureThumbnail,
+    setCustomTextureTiling,
+    setCustomTextureOffset,
+    setCustomTextureRotation,
+    setCustomTextureLoading,
+    setCustomTextureProgress,
+    setCustomTextureError,
+    clearCustomTexture,
+    isControlDrawerOpen: isOpen,
+    setIsControlDrawerOpen: setIsOpen,
+    toggleControlDrawer,
   } = useStudioStore();
 
   const [transparentBg, setTransparentBg] = useState(false);
@@ -197,21 +220,356 @@ export const ControlDrawer: React.FC = () => {
     }, 800);
   };
 
+  const getGpuMaxTextureSize = (): number => {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+      if (gl) {
+        const max = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+        if (typeof max === 'number' && max > 0) return max;
+      }
+    } catch (e) {
+      console.warn('Could not query MAX_TEXTURE_SIZE:', e);
+    }
+    return 4096; // fallback
+  };
+
+  const handleCustomTextureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCustomTextureError(null);
+    setCustomTextureLoading(true);
+    setCustomTextureProgress(10);
+
+    // Validate format: allow image/png, image/jpeg, image/webp
+    const validFormats = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!validFormats.includes(file.type)) {
+      setCustomTextureError('Invalid file format. Please upload a PNG, JPEG, or WebP image.');
+      setCustomTextureLoading(false);
+      setCustomTextureProgress(0);
+      return;
+    }
+
+    // Validate file size (max 50MB)
+    const MAX_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      setCustomTextureError('File is too large. Maximum supported size for 3D texture is 50MB.');
+      setCustomTextureLoading(false);
+      setCustomTextureProgress(0);
+      return;
+    }
+
+    try {
+      setCustomTextureProgress(30);
+
+      const objectUrl = URL.createObjectURL(file);
+      const img = new window.Image();
+      
+      const imageLoadedPromise = new Promise<HTMLImageElement>((resolve, reject) => {
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Failed to load image. File may be corrupted or in an unsupported format.'));
+        img.src = objectUrl;
+      });
+
+      await imageLoadedPromise;
+      setCustomTextureProgress(60);
+
+      // GPU Limit checking
+      const maxTextureSize = getGpuMaxTextureSize();
+      let finalBlobUrl = objectUrl;
+      const needsDownscale = img.width > maxTextureSize || img.height > maxTextureSize;
+
+      if (needsDownscale) {
+        const aspect = img.width / img.height;
+        let newWidth = img.width;
+        let newHeight = img.height;
+
+        if (img.width > img.height) {
+          newWidth = maxTextureSize;
+          newHeight = Math.round(maxTextureSize / aspect);
+        } else {
+          newHeight = maxTextureSize;
+          newWidth = Math.round(maxTextureSize * aspect);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Could not get 2D canvas context for scaling.');
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob(
+            (b) => (b ? resolve(b) : reject(new Error('Canvas image downscale export failed.'))),
+            file.type || 'image/png',
+            0.92
+          );
+        });
+        finalBlobUrl = URL.createObjectURL(blob);
+        // Free original oversized file blob URL to prevent memory leak
+        try {
+          URL.revokeObjectURL(objectUrl);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      setCustomTextureProgress(80);
+
+      // Generate 128x128 thumbnail
+      const thumbCanvas = document.createElement('canvas');
+      const thumbSize = 128;
+      thumbCanvas.width = thumbSize;
+      thumbCanvas.height = thumbSize;
+      const thumbCtx = thumbCanvas.getContext('2d');
+      if (thumbCtx) {
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+        thumbCtx.drawImage(img, sx, sy, minDim, minDim, 0, 0, thumbSize, thumbSize);
+      }
+      const thumbnailDataUrl = thumbCanvas.toDataURL('image/png');
+
+      setCustomTextureProgress(100);
+
+      // Revoke old blob URL if it exists
+      if (customTextureUrl && customTextureUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(customTextureUrl);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      setCustomTextureThumbnail(thumbnailDataUrl);
+      const dimsString = `${img.width}x${img.height}`;
+      const scaleMessage = needsDownscale ? ` (GPU Downscaled to ${maxTextureSize}px)` : '';
+      const typeLabel = file.type.split('/')[1].toUpperCase();
+      setCustomTextureName(`${file.name} [${dimsString} ${typeLabel}${scaleMessage}]`);
+      setCustomTextureUrl(finalBlobUrl);
+      setCustomTextureLoading(false);
+    } catch (err: any) {
+      setCustomTextureError(err?.message || 'Error processing texture image.');
+      setCustomTextureLoading(false);
+      setCustomTextureProgress(0);
+    }
+  };
+
+  const renderCustomTextureSection = () => {
+    return (
+      <div className="space-y-4 pt-4 border-t border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-mono text-cyan-400 uppercase font-semibold">
+              3D Model / Stage Material Texture
+            </span>
+          </div>
+          {customTextureUrl && (
+            <button
+              onClick={clearCustomTexture}
+              className="text-[10px] text-red-400 hover:text-red-300 font-mono underline flex items-center gap-1"
+              title="Remove custom texture map from material"
+              aria-label="Clear custom 3D texture"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>Clear Texture</span>
+            </button>
+          )}
+        </div>
+
+        <p className="text-[10px] text-slate-400 leading-relaxed">
+          Upload an albedo/diffuse texture image to apply directly onto the active material of the 3D typography model surface.
+        </p>
+
+        {/* Upload Trigger Dropzone */}
+        {!customTextureUrl && !customTextureLoading && (
+          <div className="relative border-2 border-dashed border-white/15 hover:border-cyan-400/50 rounded-xl p-4 text-center bg-slate-950/60 transition-colors group cursor-pointer">
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleCustomTextureUpload}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+              title="Upload custom texture map (PNG/JPEG/WebP up to 50MB)"
+              aria-label="Upload custom 3D texture file"
+            />
+            <div className="flex flex-col items-center gap-1.5">
+              <Image className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-medium text-slate-200">
+                Upload Custom 3D Texture
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                PNG, JPEG, WEBP (Up to 50MB / 4K)
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Upload Progress */}
+        {customTextureLoading && (
+          <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/40 border border-white/5">
+            <div className="flex justify-between text-[10px] font-mono text-slate-400">
+              <span className="animate-pulse">Checking GPU limits & processing...</span>
+              <span className="text-cyan-400">{customTextureProgress}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-cyan-400 transition-all duration-300"
+                style={{ width: `${customTextureProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {customTextureError && (
+          <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono">
+            {customTextureError}
+          </div>
+        )}
+
+        {/* Loaded Preview and Transform Sliders */}
+        {customTextureUrl && !customTextureLoading && (
+          <div className="space-y-4 p-3 rounded-xl bg-slate-950/40 border border-white/5 animate-fadeIn">
+            {/* Thumbnail Preview and Metadata */}
+            <div className="flex items-center gap-3">
+              {customTextureThumbnail && (
+                <img
+                  src={customTextureThumbnail}
+                  alt="Custom albedo map thumbnail"
+                  className="w-12 h-12 rounded-lg object-cover border border-white/10 bg-slate-900 shadow-inner"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-slate-200 truncate" title={customTextureName || ''}>
+                  {customTextureName || 'Custom Texture'}
+                </div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-[9px] font-mono bg-cyan-500/15 text-cyan-300 px-1.5 py-0.5 rounded uppercase">
+                    4K Map Active
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Transform Sliders */}
+            <div className="space-y-3 pt-2 border-t border-white/5">
+              {/* Tiling X & Y */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                  <span>Tiling X / Y</span>
+                  <span>{customTextureTiling.x.toFixed(1)} / {customTextureTiling.y.toFixed(1)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-mono text-slate-500">X</span>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="10.0"
+                      step="0.1"
+                      value={customTextureTiling.x}
+                      onChange={(e) => setCustomTextureTiling({ ...customTextureTiling, x: parseFloat(e.target.value) })}
+                      className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      aria-label="Tiling X"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-mono text-slate-500">Y</span>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="10.0"
+                      step="0.1"
+                      value={customTextureTiling.y}
+                      onChange={(e) => setCustomTextureTiling({ ...customTextureTiling, y: parseFloat(e.target.value) })}
+                      className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      aria-label="Tiling Y"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Offset X & Y */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                  <span>Offset X / Y</span>
+                  <span>{customTextureOffset.x.toFixed(2)} / {customTextureOffset.y.toFixed(2)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-mono text-slate-500">X</span>
+                    <input
+                      type="range"
+                      min="-1.0"
+                      max="1.0"
+                      step="0.05"
+                      value={customTextureOffset.x}
+                      onChange={(e) => setCustomTextureOffset({ ...customTextureOffset, x: parseFloat(e.target.value) })}
+                      className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      aria-label="Offset X"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-mono text-slate-500">Y</span>
+                    <input
+                      type="range"
+                      min="-1.0"
+                      max="1.0"
+                      step="0.05"
+                      value={customTextureOffset.y}
+                      onChange={(e) => setCustomTextureOffset({ ...customTextureOffset, y: parseFloat(e.target.value) })}
+                      className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      aria-label="Offset Y"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Rotation */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono uppercase">
+                  <span>Rotation</span>
+                  <span>{customTextureRotation}°</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RotateCw className="w-3.5 h-3.5 text-slate-500" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    step="1"
+                    value={customTextureRotation}
+                    onChange={(e) => setCustomTextureRotation(parseInt(e.target.value))}
+                    className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                    aria-label="Texture Rotation"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <aside
-      className={`fixed top-24 bottom-28 md:bottom-6 right-6 z-40 transition-all duration-300 ease-in-out flex flex-col ${
-        isOpen ? 'w-80 md:w-[30%] md:min-w-[320px] md:max-w-[420px]' : 'w-16'
+      className={`absolute top-20 sm:top-24 bottom-24 sm:bottom-28 md:bottom-6 right-3 sm:right-6 z-40 transition-all duration-300 ease-in-out flex flex-col pointer-events-auto ${
+        isOpen ? 'w-[calc(100vw-2rem)] sm:w-72 md:w-80 lg:w-96' : 'w-14 sm:w-16'
       }`}
       aria-label="3D Studio Control Drawer"
     >
       {/* Collapse / Expand Toggle Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="absolute -left-4 top-8 z-50 w-9 h-9 min-w-[36px] min-h-[36px] md:w-8 md:h-8 rounded-full backdrop-blur-xl bg-slate-900/90 border border-white/20 text-cyan-400 flex items-center justify-center hover:bg-slate-800 transition-colors shadow-lg"
+        onClick={toggleControlDrawer}
+        className="absolute -left-[18px] top-8 z-50 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full backdrop-blur-xl bg-slate-900/90 border border-white/20 text-cyan-400 flex items-center justify-center hover:bg-slate-800 transition-colors shadow-lg"
         title={isOpen ? 'Collapse Drawer (Hide control panel)' : 'Expand Drawer (Show control panel)'}
         aria-label={isOpen ? 'Collapse 3D studio control drawer' : 'Expand 3D studio control drawer'}
       >
-        {isOpen ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        {isOpen ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
       </button>
 
       <div className="w-full h-full rounded-2xl backdrop-blur-xl bg-slate-900/40 border border-white/10 flex flex-col overflow-hidden shadow-2xl">
@@ -379,7 +737,7 @@ export const ControlDrawer: React.FC = () => {
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     maxLength={24}
-                    className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-white/10 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 transition-colors font-sans"
+                    className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-white/10 rounded-xl text-slate-100 text-base md:text-sm focus:outline-none focus:border-cyan-400 transition-colors font-sans"
                     placeholder="Enter 3D text..."
                     title="Type custom text string to render in 3D (Max 24 characters)"
                     aria-label="3D Text Content input"
@@ -397,7 +755,7 @@ export const ControlDrawer: React.FC = () => {
                   <select
                     value={font}
                     onChange={(e) => setFont(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-white/10 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-400 transition-colors"
+                    className="w-full px-3.5 py-2.5 bg-slate-900/80 border border-white/10 rounded-xl text-slate-100 text-base md:text-sm focus:outline-none focus:border-cyan-400 transition-colors"
                     title="Select the 3D typeface font geometry file"
                     aria-label="Typeface Font selector"
                   >
@@ -422,7 +780,7 @@ export const ControlDrawer: React.FC = () => {
                       <button
                         key={m.name}
                         onClick={() => setMaterial(m.name)}
-                        className={`p-2.5 text-xs rounded-xl border text-left transition-all ${
+                        className={`min-h-[44px] flex flex-col justify-center p-2.5 text-xs rounded-xl border text-left transition-all ${
                           material === m.name
                             ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-medium shadow-sm'
                             : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'
@@ -801,6 +1159,9 @@ export const ControlDrawer: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* 3D Model / Stage Material Texture section */}
+                {renderCustomTextureSection()}
               </div>
             )}
 
@@ -1228,7 +1589,7 @@ export const ControlDrawer: React.FC = () => {
                       <button
                         key={mode}
                         onClick={() => setCameraMode(mode)}
-                        className={`p-2.5 rounded-xl border text-left transition-all ${
+                        className={`min-h-[44px] flex flex-col justify-center p-2.5 rounded-xl border text-left transition-all ${
                           cameraMode === mode
                             ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-medium shadow-sm'
                             : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'
@@ -1405,7 +1766,7 @@ export const ControlDrawer: React.FC = () => {
                       <button
                         key={mode}
                         onClick={() => setCameraMode(mode)}
-                        className={`p-3 rounded-xl border text-left transition-all ${
+                        className={`min-h-[44px] flex flex-col justify-center p-3 rounded-xl border text-left transition-all ${
                           cameraMode === mode
                             ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-medium shadow-sm'
                             : 'bg-slate-900/50 border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'
@@ -1580,6 +1941,9 @@ export const ControlDrawer: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* 3D Model / Stage Material Texture section */}
+                  {renderCustomTextureSection()}
                 </div>
 
                 {/* --- Section: Global & Key Lights --- */}
@@ -1900,7 +2264,7 @@ export const ControlDrawer: React.FC = () => {
                       <select
                         value={videoDuration}
                         onChange={(e) => setVideoDuration(parseInt(e.target.value, 10))}
-                        className="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-xl text-slate-100 text-xs font-mono"
+                        className="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-xl text-slate-100 text-base md:text-xs font-mono"
                       >
                         <option value={5}>5 Seconds</option>
                         <option value={8}>8 Seconds</option>
@@ -1914,7 +2278,7 @@ export const ControlDrawer: React.FC = () => {
                       <select
                         value={videoFps}
                         onChange={(e) => setVideoFps(parseInt(e.target.value, 10))}
-                        className="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-xl text-slate-100 text-xs font-mono"
+                        className="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-xl text-slate-100 text-base md:text-xs font-mono"
                       >
                         <option value={60}>60 FPS (Smooth)</option>
                         <option value={30}>30 FPS (Standard)</option>

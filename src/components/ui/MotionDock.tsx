@@ -97,7 +97,7 @@ export const MotionDock: React.FC = () => {
         <div className="fixed inset-0 bg-white z-[9999] pointer-events-none animate-ping opacity-75 duration-300" />
       )}
 
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-5xl">
+      <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-40 w-[94%] sm:w-[90%] max-w-5xl">
         <div className="rounded-2xl backdrop-blur-xl bg-slate-900/40 border border-white/10 px-6 py-4 flex flex-col gap-4 shadow-2xl">
           
           {/* Top row / Minimize Header */}
@@ -118,7 +118,7 @@ export const MotionDock: React.FC = () => {
               {/* Play / Pause Toggle (shown in minimized state too) */}
               <button
                 onClick={() => setIsPaused(!isPaused)}
-                className={`p-2 rounded-xl border transition-all ${
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-all ${
                   !isPaused
                     ? 'bg-purple-500/10 border-purple-500/30 text-purple-300'
                     : 'bg-slate-900 border-white/10 text-slate-400 hover:text-slate-200'
@@ -132,7 +132,7 @@ export const MotionDock: React.FC = () => {
               {/* Minimize / Maximize Toggle Button */}
               <button
                 onClick={() => setIsMinimized(!isMinimized)}
-                className="p-2 bg-slate-900 border border-white/10 hover:border-purple-400/50 hover:bg-slate-800 text-slate-300 rounded-xl flex items-center transition-all"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-slate-900 border border-white/10 hover:border-purple-400/50 hover:bg-slate-800 text-slate-300 rounded-xl transition-all"
                 title={isMinimized ? 'Maximize Motion Dock' : 'Minimize Motion Dock'}
                 aria-label={isMinimized ? 'Maximize Motion Dock' : 'Minimize Motion Dock'}
               >
@@ -174,7 +174,7 @@ export const MotionDock: React.FC = () => {
                     onTouchStart={() => setIsScrubbing(true)}
                     onTouchEnd={() => setIsScrubbing(false)}
                     onChange={(e) => setCurrentTime(parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-slate-800/50 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400 transition-all z-10"
+                    className="w-full h-2 sm:h-1.5 bg-slate-800/50 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400 transition-all z-10"
                     aria-label="Animation timeline scrubber"
                   />
                   <div 
@@ -186,7 +186,7 @@ export const MotionDock: React.FC = () => {
 
               <div className="flex flex-col lg:flex-row items-center gap-6 justify-between w-full">
                 {/* Quick preset selection cards */}
-                <div className="flex items-center gap-2 overflow-x-auto max-w-full no-scrollbar py-1">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
                   {PRESETS.map((preset) => {
                     const IconComp = preset.icon;
                     const isActive = animationPreset === preset.name;
@@ -194,7 +194,7 @@ export const MotionDock: React.FC = () => {
                       <button
                         key={preset.name}
                         onClick={() => setAnimationPreset(preset.name)}
-                        className={`flex-shrink-0 px-3.5 py-2.5 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
+                        className={`min-w-[44px] min-h-[44px] flex-shrink-0 px-3.5 py-2.5 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
                           isActive
                             ? 'bg-purple-500/15 border-purple-400 text-purple-300 shadow-purple-500/10 shadow-md'
                             : 'bg-slate-900/40 border-white/5 text-slate-400 hover:bg-white/5 hover:border-white/10 hover:text-slate-200'
@@ -233,7 +233,7 @@ export const MotionDock: React.FC = () => {
                         step="0.1"
                         value={speed}
                         onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                        className="w-full accent-purple-400 h-1 cursor-pointer"
+                        className="w-full accent-purple-400 h-2 sm:h-1.5 cursor-pointer"
                         title="Drag to adjust animation speed"
                         aria-label="Animation Speed slider"
                       />
@@ -253,7 +253,7 @@ export const MotionDock: React.FC = () => {
                         step="5"
                         value={intensity}
                         onChange={(e) => setIntensity(parseInt(e.target.value, 10))}
-                        className="w-full accent-purple-400 h-1 cursor-pointer"
+                        className="w-full accent-purple-400 h-2 sm:h-1.5 cursor-pointer"
                         title="Drag to adjust kinetic displacement intensity"
                         aria-label="Kinetic Motion Intensity slider"
                       />
@@ -267,7 +267,7 @@ export const MotionDock: React.FC = () => {
                     {/* Play / Pause Toggle */}
                     <button
                       onClick={() => setIsPaused(!isPaused)}
-                      className={`p-2.5 rounded-xl border transition-all ${
+                      className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-all ${
                         !isPaused
                           ? 'bg-purple-500/10 border-purple-500/30 text-purple-300'
                           : 'bg-slate-900 border-white/10 text-slate-400 hover:text-slate-200'
@@ -281,7 +281,7 @@ export const MotionDock: React.FC = () => {
                     {/* Loop Toggle */}
                     <button
                       onClick={() => setLoop(!loop)}
-                      className={`p-2.5 rounded-xl border transition-all ${
+                      className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-all ${
                         loop
                           ? 'bg-purple-500/10 border-purple-500/30 text-purple-300 shadow-sm'
                           : 'bg-slate-900 border-white/10 text-slate-400 hover:text-slate-200'
@@ -297,7 +297,7 @@ export const MotionDock: React.FC = () => {
                     {/* Snapshot Button */}
                     <button
                       onClick={handleSnapshot}
-                      className="p-3 bg-gradient-to-r from-neonCyan to-electricPurple hover:from-cyan-400 hover:to-purple-500 text-slate-950 font-bold rounded-xl shadow-lg hover:shadow-cyan-500/20 flex items-center gap-2 transition-all"
+                      className="min-w-[44px] min-h-[44px] p-3 bg-gradient-to-r from-neonCyan to-electricPurple hover:from-cyan-400 hover:to-purple-500 text-slate-950 font-bold rounded-xl shadow-lg hover:shadow-cyan-500/20 flex items-center gap-2 transition-all"
                       title="Capture Frame: Take a high-resolution snapshot capture of the current WebGL 3D Canvas rendering viewport as a PNG file."
                       aria-label="Capture and download 3D Canvas PNG screenshot"
                     >
@@ -308,7 +308,7 @@ export const MotionDock: React.FC = () => {
                     {/* Export Config Preset JSON */}
                     <button
                       onClick={handleExportConfig}
-                      className="p-3 bg-slate-950/80 border border-white/10 hover:border-cyan-400/50 hover:bg-slate-900 text-slate-200 font-medium rounded-xl shadow-lg flex items-center gap-2 transition-all"
+                      className="min-w-[44px] min-h-[44px] p-3 bg-slate-950/80 border border-white/10 hover:border-cyan-400/50 hover:bg-slate-900 text-slate-200 font-medium rounded-xl shadow-lg flex items-center gap-2 transition-all"
                       title="Export Preset: Serialise and download the entire studio configuration (Typography, Materials, Stage, Physics, Lighting) as a JSON preset file."
                       aria-label="Export studio configuration JSON file"
                     >
