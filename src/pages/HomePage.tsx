@@ -5,7 +5,7 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] px-4 py-12 text-center text-white">
+    <div className="flex flex-col items-center justify-center flex-1 px-4 py-12 text-center text-white">
       {/* Hero Section */}
       <section className="py-16 max-w-5xl mx-auto">
         <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-neonCyan/10 border border-neonCyan/30 text-neonCyan text-sm font-semibold tracking-wide uppercase">

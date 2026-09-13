@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useStudioStore, MaterialType, AnimationPreset } from '../store/useStudioStore';
 
 interface ShowcaseCardProps {
   title: string;
@@ -8,13 +9,24 @@ interface ShowcaseCardProps {
   category: string;
   views: string;
   badge?: string;
+  presetConfig: {
+    text: string;
+    fontPath: string;
+    material: MaterialType;
+    color: string;
+    animationPreset: AnimationPreset;
+    metalness?: number;
+    roughness?: number;
+    clearcoat?: number;
+  };
 }
 
-const ShowcaseCard: React.FC<ShowcaseCardProps> = ({ title, description, presetId, category, views, badge }) => {
+const ShowcaseCard: React.FC<ShowcaseCardProps> = ({ title, description, category, views, badge, presetConfig }) => {
   const navigate = useNavigate();
+  const loadPreset = useStudioStore((state) => state.loadPreset);
 
   const handleLoadInStudio = () => {
-    console.log(`Loading preset ${presetId} in studio`);
+    loadPreset(presetConfig);
     navigate('/studio');
   };
 
@@ -63,7 +75,15 @@ const ShowcasePage: React.FC = () => {
       presetId: "tunnel-zoom-001",
       category: "Viral Shorts",
       views: "1.2M Uses",
-      badge: "Trending"
+      badge: "Trending",
+      presetConfig: {
+        text: "VIRAL HOOK",
+        fontPath: "/fonts/Inter_Bold.json",
+        material: "Neon Glow" as MaterialType,
+        color: "#00ffcc",
+        animationPreset: "Tunnel Zoom" as AnimationPreset,
+        bloomIntensity: 1.5,
+      }
     },
     {
       title: "Glitch Matrix Distort",
@@ -71,6 +91,14 @@ const ShowcasePage: React.FC = () => {
       presetId: "glitch-effect-001",
       category: "Glitch",
       views: "850K Uses",
+      presetConfig: {
+        text: "GLITCH MATRIX",
+        fontPath: "/fonts/Inter_Bold.json",
+        material: "Holographic/Iridescent" as MaterialType,
+        color: "#ff0055",
+        animationPreset: "Glitch Shake" as AnimationPreset,
+        roughness: 0.1,
+      }
     },
     {
       title: "Cinematic Gold Rotate",
@@ -78,7 +106,16 @@ const ShowcasePage: React.FC = () => {
       presetId: "cinematic-rotate-001",
       category: "Cinematic",
       views: "2.4M Uses",
-      badge: "Popular"
+      badge: "Popular",
+      presetConfig: {
+        text: "LUXE GOLD",
+        fontPath: "/fonts/Inter_Bold.json",
+        material: "Gold/Brass" as MaterialType,
+        color: "#ffd700",
+        animationPreset: "Cinematic Rotate" as AnimationPreset,
+        metalness: 0.9,
+        roughness: 0.2,
+      }
     },
     {
       title: "Wave Morph Fluid",
@@ -86,6 +123,14 @@ const ShowcasePage: React.FC = () => {
       presetId: "wave-morph-001",
       category: "Viral Shorts",
       views: "920K Uses",
+      presetConfig: {
+        text: "WAVE FLUID",
+        fontPath: "/fonts/Inter_Bold.json",
+        material: "Frosted Glass" as MaterialType,
+        color: "#00d2ff",
+        animationPreset: "Wave Morph" as AnimationPreset,
+        clearcoat: 1.0,
+      }
     },
     {
       title: "Explosive Energy Burst",
@@ -93,6 +138,14 @@ const ShowcasePage: React.FC = () => {
       presetId: "explosive-reveal-001",
       category: "Glitch",
       views: "670K Uses",
+      presetConfig: {
+        text: "EXPLOSIVE",
+        fontPath: "/fonts/Inter_Bold.json",
+        material: "Neon Glow" as MaterialType,
+        color: "#ff3300",
+        animationPreset: "Explosive Reveal" as AnimationPreset,
+        bloomIntensity: 2.0,
+      }
     },
     {
       title: "Typewriter Cyber Intro",
@@ -100,7 +153,15 @@ const ShowcasePage: React.FC = () => {
       presetId: "typing-write-on-001",
       category: "Cyberpunk",
       views: "1.5M Uses",
-      badge: "New"
+      badge: "New",
+      presetConfig: {
+        text: "CYBERPUNK 2077",
+        fontPath: "/fonts/Inter_Bold.json",
+        material: "Chrome/Metallic" as MaterialType,
+        color: "#00ff66",
+        animationPreset: "Typewriter" as AnimationPreset,
+        metalness: 0.95,
+      }
     },
   ];
 

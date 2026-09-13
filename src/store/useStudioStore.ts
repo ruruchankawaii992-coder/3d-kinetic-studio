@@ -231,6 +231,12 @@ export interface StudioState {
   toggleControlDrawer: () => void;
   togglePerspectiveList: () => void;
 
+  loadPreset: (preset: Partial<StudioState> & {
+    metalness?: number;
+    roughness?: number;
+    clearcoat?: number;
+  }) => void;
+
   resetAll: () => void;
 }
 
@@ -566,6 +572,19 @@ const storeCreator: StateCreator<StudioState> = (set) => ({
         isControlDrawerOpen: (nextOpen && isMobile) ? false : state.isControlDrawerOpen,
       };
     }),
+
+  loadPreset: (preset) =>
+    set((state) => ({
+      ...preset,
+      materialParams: preset.metalness !== undefined || preset.roughness !== undefined || preset.clearcoat !== undefined
+        ? {
+            ...state.materialParams,
+            ...(preset.metalness !== undefined ? { metalness: preset.metalness } : {}),
+            ...(preset.roughness !== undefined ? { roughness: preset.roughness } : {}),
+            ...(preset.clearcoat !== undefined ? { clearcoat: preset.clearcoat } : {}),
+          }
+        : state.materialParams,
+    })),
 
   resetAll: () =>
     set((state) => {
