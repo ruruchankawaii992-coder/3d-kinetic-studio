@@ -11,9 +11,9 @@ const StudioPage = lazy(() => import('./pages/StudioPage'));
 
 const Layout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#0B0E14] text-slate-100 flex flex-col w-full">
       <NavigationHeader />
-      <main className="flex-1 relative overflow-hidden">
+      <main className="flex-1 relative flex flex-col min-h-0">
         <Outlet />
       </main>
     </div>

@@ -1149,24 +1149,29 @@ export const ControlDrawer: React.FC = () => {
                 </div>
 
                 {/* Wireframe Toggle */}
-                <div className="space-y-3 pt-2">
+                <div className="space-y-3 pt-2 bg-slate-900/60 p-3.5 rounded-xl border border-white/5 shadow-inner">
                   <div className="flex items-center justify-between">
-                    <span 
-                      className="text-xs font-mono text-slate-400 uppercase"
-                      title="Toggle polygon wireframe mesh view to inspect geometry triangles."
-                    >
-                      Wireframe Mode
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span 
+                        className="text-xs font-mono text-slate-300 uppercase font-semibold"
+                        title="Toggle polygon wireframe mesh view to inspect geometry triangles instantly across themes and materials."
+                      >
+                        Wireframe Mode
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                        LIVE-SYNC
+                      </span>
+                    </div>
                     <button
                       onClick={() => setWireframeMode(!wireframeMode)}
-                      className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                        wireframeMode ? 'bg-cyan-500' : 'bg-slate-800'
+                      className={`w-12 h-6 flex items-center rounded-full p-1 transition-all duration-200 ${
+                        wireframeMode ? 'bg-cyan-500 shadow-lg shadow-cyan-500/30' : 'bg-slate-800 hover:bg-slate-700'
                       }`}
                       title={wireframeMode ? 'Disable wireframe mode' : 'Enable wireframe mode'}
                       aria-label="Toggle wireframe mode"
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
                           wireframeMode ? 'translate-x-6' : 'translate-x-0'
                         }`}
                       />
@@ -1174,17 +1179,17 @@ export const ControlDrawer: React.FC = () => {
                   </div>
 
                   {wireframeMode && (
-                    <div className="space-y-2 pt-1 animate-fadeIn">
+                    <div className="space-y-2 pt-2 border-t border-white/5 animate-fadeIn">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-mono text-slate-400 uppercase">Wireframe Stroke Color</span>
-                        <span className="font-mono text-xs text-slate-300 uppercase">{wireframeColor}</span>
+                        <span className="font-mono text-xs text-cyan-300 uppercase">{wireframeColor}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
                           value={wireframeColor}
                           onChange={(e) => setWireframeColor(e.target.value)}
-                          className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                          className="w-8 h-8 rounded-lg border border-white/20 bg-transparent cursor-pointer shadow-sm"
                           title="Pick wireframe stroke color"
                           aria-label="Wireframe color picker"
                         />
@@ -1203,7 +1208,7 @@ export const ControlDrawer: React.FC = () => {
                               onClick={() => setWireframeColor(swatch.color)}
                               className={`w-4 h-4 rounded-full border transition-transform ${
                                 wireframeColor.toLowerCase() === swatch.color.toLowerCase()
-                                  ? 'scale-125 border-white shadow-sm ring-1 ring-cyan-400'
+                                  ? 'scale-125 border-white shadow-md ring-2 ring-cyan-400'
                                   : 'border-white/20 hover:scale-110'
                               }`}
                               style={{ backgroundColor: swatch.color }}
@@ -1402,9 +1407,11 @@ export const ControlDrawer: React.FC = () => {
             {activeTab === 'visual' && (
               <div className="space-y-6 animate-fadeIn pb-8">
                 {/* Visual Enhancements Header */}
-                <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Visual Enhancements</span>
+                <div className="flex items-center justify-between pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Visual Enhancements</span>
+                  </div>
                 </div>
 
                 <p className="text-xs text-slate-400">
@@ -1806,9 +1813,14 @@ export const ControlDrawer: React.FC = () => {
 
             {activeTab === 'camera' && (
               <div className="space-y-6 animate-fadeIn pb-8">
-                <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
-                  <Camera className="w-4 h-4" />
-                  <span>Camera & TunnelZoom Mode</span>
+                <div className="flex items-center justify-between pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                  <div className="flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    <span>Camera & TunnelZoom Mode</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1 font-bold">
+                    <span>★</span> PRO
+                  </span>
                 </div>
 
                 <p className="text-xs text-slate-400">
@@ -1869,9 +1881,14 @@ export const ControlDrawer: React.FC = () => {
               <div className="space-y-6 animate-fadeIn pb-8">
                 {/* --- Section: Environment & Stage --- */}
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
-                    <Sun className="w-4 h-4" />
-                    <span>Environment & Stage</span>
+                  <div className="flex items-center justify-between pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                    <div className="flex items-center gap-2">
+                      <Sun className="w-4 h-4" />
+                      <span>Environment & Stage</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1 font-bold">
+                      <span>★</span> PRO
+                    </span>
                   </div>
 
                   {/* Stage Lighting Preset */}
@@ -2229,9 +2246,14 @@ export const ControlDrawer: React.FC = () => {
 
             {activeTab === 'export' && (
               <div className="space-y-6 animate-fadeIn pb-8">
-                <div className="flex items-center gap-2 pb-2 border-b border-white/10 font-semibold text-cyan-400">
-                  <Download className="w-4 h-4" />
-                  <span>4K PNG & WebM Export Engine</span>
+                <div className="flex items-center justify-between pb-2 border-b border-white/10 font-semibold text-cyan-400">
+                  <div className="flex items-center gap-2">
+                    <Download className="w-4 h-4" />
+                    <span>4K PNG & WebM Export Engine</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1 font-bold">
+                    <span>★</span> PRO
+                  </span>
                 </div>
 
                 {errorMessage && (
